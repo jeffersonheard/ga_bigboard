@@ -1,0 +1,5 @@
+# These are comment lines.  Every nonblank line here will be treated as a
+# package name to be installed by the virtualenv-ironment during package
+# installation.  These package names should always be things that are in the
+# cheeseshop and can be installed by pip.  Otherwise you should build and
+# configure them yourself. 

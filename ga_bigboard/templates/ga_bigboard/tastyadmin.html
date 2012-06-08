@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script src="{{ STATIC_URL }}ga_bigboard/jquery-ui/js/jquery-1.7.1.min.js"></script>
+    <script src='{{ STATIC_URL }}ga_bigboard/jquery-ui/js/jquery-ui-1.8.18.custom.min.js'></script>
+    <script src="{{ STATIC_URL }}ga_bigboard/json2.js" type="text/javascript"></script>
+    <script src="{{ STATIC_URL }}ga_bigboard/base64.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        var api_url = null;
+        var api_username = null;
+        var api_password = null;
+        var next_page = null;
+        var this_page = null;
+        var previous_page = null;
+        var record_count = null;
+        var detail_appendable = false;
+        var detail_editable = false;
+        var detail_readable = false;
+        var detail_removable = false;
+        var list_readable = false;
+        var list_appendable = false;
+        var list_editable = false;
+        var list_removable = false;
+        var limit = 50;
+        var name_field = null;
+        var data_schema = null;
+
+        var converters = {
+            'string' : function(a) { return a; },
+            'float' : function(a) { return parseFloat(a); },
+            'integer' : function(a) { return parseInt(a); },
+            'date' : function(a) { return new Date(a); },
+            'typed_string' : function(a) { return a; },
+            'list' : function(a) { return JSON.parse(a);  },
+            'dict' : function(a) { return JSON.parse(a); },
+            'related' : function(a) { return a?a:null; },
+        };
+        var writers = {
+            'string' : function(a) { return a; },
+            'float' : function(a) { return a; },
+            'integer' : function(a) { return a; },
+            'date' : function(a) { return new Date(a); },
+            'typed_string' : function(a) { return a; },
+            'list' : function(a) { return JSON.stringify(a);  },
+            'dict' : function(a) { return JSON.stringify(a); },
+            'related' : function(a) { return a; }
+        }
+
+        function incl(arr,obj) {
+            return (arr.indexOf(obj) != -1);
+        }
+
+        function iter(obj, fun) {
+            for(var o in obj) {
+                if(obj.hasOwnProperty(o)) {
+                    fun(obj[o]);
+                }
+            }
+        }
+
+        function enumerate(obj, fun) {
+            for(var o in obj) {
+                if(obj.hasOwnProperty(o)) {
+                    fun(o, obj[o]);
+                }
+            }
+        }
+
+        function createRecord() {
+            var rec = {};
+            $(".field_itself").each(function(o) {
+                rec[$(this).attr("name")] = converters[$(this).data('type')]($(this).val());
+            });
+
+            return JSON.stringify(rec);
+        }
+
+        function appendStringField(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'string') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+        }
+
+        function appendFloatField(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'float') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+        }
+
+        function appendIntegerField(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'integer') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+        }
+
+        function appendTypedStringField(name, field, type) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'typed_string') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text) )
+            );
+        }
+
+        function appendRelatedField(name, field, type) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'related') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text) )
+            );
+        }
+
+        function appendListField(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'list') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+        }
+
+        function appendDictField(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name) )
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'dict') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+        }
+
+        function appendDateTimePicker(name, field) {
+            $("#record_control_container").append($("<tr class='field_container'></tr>")
+                    .append( $("<label class='field_name'></label>").attr('for', name).text(name))
+                    .append( $("<input class='field_itself' type='text'/>").attr('id', "field_" + name).attr('name', name).data("type", 'datetime') )
+                    .append( $("<span class='help_text'></span>").text(field.help_text))
+            );
+            $("#field_" + name).datepicker();
+        }
+
+        function buildAdminFromSchema(data, textStatus, jqXHR) {
+            data_schema = data;
+            detail_appendable = incl(data.allowed_detail_http_methods, 'put');
+            detail_editable = incl(data.allowed_detail_http_methods, 'post');
+            detail_readable = incl(data.allowed_detail_http_methods, 'get');
+            detail_removable = incl(data.allowed_detail_http_methods, 'delete');
+            list_appendable = incl(data.allowed_list_http_methods, 'put');
+            list_editable = incl(data.allowed_detail_http_methods, 'post');
+            list_readable = incl(data.allowed_list_http_methods, 'get');
+            list_removable = incl(data.allowed_list_http_methods, 'delete');
+            
+            if(detail_appendable) {
+                $("#noauth_append").hide();
+                $("#add_new").show();
+            }
+            else {
+                $("#noauth_append").show();
+                $("#add_new").hide();
+            }
+            if(detail_removable) {
+                $("#noauth_delete").hide();
+            }
+            else {
+                $("#noauth_delete").show();
+            }
+            if(detail_editable) {
+                $("#noauth_edit").hide();
+                $("#edit_existing").show();
+            }
+            else {
+                $("#noauth_edit").show();
+                $("#edit_existing").hide();
+            }
+
+            if(list_readable) {
+                this_page = api_url;
+                $.ajax({
+                    url : api_url,
+                    data : { format : 'json', limit : limit },
+                    username : api_username,
+                    password : api_password,
+                    success : loadRecordPage,
+                    error : errorLoadingRecordPage
+                });
+            }
+
+            $("#record_control_container>*").remove();
+            $("#record_control_container").append("<tr><th>Name</th><th>Value</th></tr>");
+            $("#name_field>*").remove();
+            enumerate(data.fields, function(name, field) {
+                if(name !== 'id' && name !== "resource_uri") {
+                    switch(field.type) {
+                        case "integer":
+                            appendIntegerField(name, field);
+                            break;
+                        case "datetime":
+                            appendDateTimePicker(name, field);
+                            break;
+                        case "list":
+                            appendListField(name,field);
+                            break;
+                        case "float":
+                            appendFloatField(name, field);
+                            break;
+                        case "string":
+                            appendStringField(name, field);
+                            break;
+                        case "dict":
+                            appendDictField(name, field);
+                            break;
+                        case 'related':
+                            appendRelatedField(name, field);
+                            break;
+                        default:
+                            appendTypedStringField(name, field, field.type);
+                    }
+                    $("#name_field").append($("<option></option>").attr('value', name).text(name));
+                }
+            });
+
+            $("tr > *").wrap("<td></td>")
+
+        }
+
+        function guessTitle(obj) {
+            var ret = obj.id;
+
+            if(name_field) { ret = obj[name_field]; }
+            else if(obj['title']) { ret = obj['title']; }
+            else if(obj['name']) { ret = obj['name']; }
+            else for(var v in obj) { if(obj.hasOwnProperty(v)) {
+                if(typeof(obj[v]) === 'string' && obj[v].length < 100) { ret = obj.id + " // " + v + "=" + obj[v]; } // return the first string we find
+            }}
+            return ret;
+        }
+
+        function setActiveRecord(obj) {
+            enumerate(obj, function(name, value) {
+                if(name !== 'id' && name !== 'resource_uri') {
+                    $("#field_" + name).val(writers[ data_schema.fields[name].type ](value));
+                }
+            });
+        }
+
+        function deletedRecord(obj) { return function(data, textStatus, jqXHR) {
+            if(list_readable) {
+                $.ajax({
+                    url : this_page,
+                    data : { format : 'json' },
+                    username : api_username,
+                    password : api_password,
+                    success : loadRecordPage,
+                    error : errorLoadingRecordPage
+                });
+            }
+        }}
+
+        function deletionFailed(obj) { return function(data, textStatus, errorThrown) {
+            alert(textStatus);
+            console.log(errorThrown);
+            console.log(data);
+        }}
+
+        function deleteRecord(obj) {
+            $.ajax({
+                url: api_url + obj.id + "/",
+                type: 'DELETE',
+                success: deletedRecord(obj),
+                error: deletionFailed(obj)
+            })
+        }
+
+        function loadRecordPage(data, textStatus, jqXHR) {
+            next_page = data.meta.next;
+            previous_page = data.meta.previous;
+            record_count = data.meta.total_count;
+
+            $("#paginated_records>*").remove();
+
+            iter(data.objects, function(record) {
+                var cont = $("<div class='record'></div>")
+                        .attr("id", record.id)
+                        .data("obj", record);
+                var title = $("<a href='#' class='title'></a>")
+                        .text(guessTitle(record)).data("obj", record);
+                var del = $("<a href='#' class='delete'>[x]</a>").data("obj", record);
+
+                if(detail_removable) {
+                    cont.append(del);
+                }
+                cont.append(title);
+
+                $("#paginated_records").append(cont);
+            });
+
+            $(".title").click(function(evt) {
+                setActiveRecord($(this).data("obj"));
+            });
+
+            $(".delete").click(function(evt) {
+                deleteRecord($(this).data("obj"));
+            });
+        }
+
+        function errorLoadingRecordPage(data, textStatus, errorThrown) {
+            alert(textStatus);
+            console.log(errorThrown);
+            console.log(data);
+        }
+
+        function reportSchemaNotFound(data, textStatus, errorThrown) {
+            alert(textStatus);
+            console.log(errorThrown);
+            console.log(data);
+        }
+
+        function errorAddingNewRecord(data, textStatus, errorThrown) {
+            alert(errorThrown);
+            console.log(errorThrown);
+            console.log(data);
+        }
+
+        function errorEditingRecord(data, textStatus, errorThrown) {
+            alert(textStatus);
+            console.log(errorThrown);
+            console.log(data);
+        }
+
+        function refreshRecordPage() {
+            $.ajax({
+                url : this_page,
+                data : { format : "json", limit:limit },
+                username : api_username,
+                password : api_password,
+                accepts : 'application/json',
+                success : loadRecordPage,
+                error : errorLoadingRecordPage
+            });
+        }
+
+        $(function() {
+
+            $("#api_admin_form").submit(function(evt) {                                                                 // load the schema and make an interface.
+                api_url = $("#api_link").val();
+                if(api_url.substr(-1) !== "/") api_url += '/';
+                api_username = $("#api_username").val();
+                api_password = $("#api_password").val();
+
+                $.ajax({
+                    url : api_url + "schema/",
+                    data : { format : 'json', limit:limit },
+                    username : api_username,
+                    password : api_password,
+                    accepts : 'application/json',
+                    success : buildAdminFromSchema,
+                    error : reportSchemaNotFound
+                });
+
+                return false;
+            });
+
+            $("#page_beginning").click(function(evt) {                                                                 // go all the way back to the first page
+                this_page = api_url + "?format=json";
+                refreshRecordPage();
+            });
+
+            $("#page_back").click(function(evt) {                                                                      // go back one page
+                if(previous_page) {
+                    this_page = previous_page;
+                    refreshRecordPage();
+                }
+            });
+
+            $("#page_fwd").click(function(evt) {                                                                       // go forward one page
+                if(next_page) {
+                    this_page = next_page;
+                    refreshRecordPage();
+                }
+            });
+
+            $("#page_end").click(function(evt) {                                                                       // go to the last page. FIXME should be a multiple of hte limit, not the last limit records.
+                if(record_count > limit) {
+                    this_page = api_url + "?format=json&offset=" + (record_count - limit);
+                    refreshRecordPage();
+                }
+            });
+
+            $("#add_new").click(function(evt) {
+               if(detail_appendable) {
+                   $.ajax({
+                       type : "POST",
+                       url : api_url,
+                       data : createRecord(),
+                       accepts: 'application/json',
+                       headers : {
+                           Accept : 'application/json',
+                           "Content-Type" : 'application/json'
+                       },
+                       processData : false,
+                       username : api_username,
+                       password : api_password,
+                       success : refreshRecordPage,
+                       error : errorAddingNewRecord
+                   });
+               }
+            });
+
+            $("#record_editor").submit(function(evt) {
+               if(detail_editable) {
+                   $.ajax({
+                       type : "PUT",
+                       url : api_url + $("#record_editor").data().id + "/",
+                       data : createRecord(),
+                       headers : {
+                           Accept : 'application/json',
+                           "Content-Type" : 'application/json'
+                       },
+                       accepts: 'application/json',
+                       processData: false,
+                       username : api_username,
+                       password : api_password,
+                       success : refreshRecordPage,
+                       error : errorEditingRecord
+                   })
+               }
+               return false;
+            });
+
+            $("#name_field").change(function(evt) {
+                name_field = $("#name_field option:selected").text();
+                refreshRecordPage();
+            });
+
+            $("#add_new").hide();
+            $("#update_existing").hide();
+
+            return false;
+        });
+    </script>
+
+    <style>
+
+        .field_name {
+            width : 250px;
+        }
+
+        .help_text {
+            font-size: 10pt;
+            font-style: italic;
+        }
+        div#paginator {
+            padding-top: 1em;
+            font-size: 10pt;
+            font-size: 10pt;
+        }
+        .delete {
+            padding-right: 1em;
+            font-size: 8pt;
+        }
+        
+        .note {
+            font-size: 8pt;
+            color: #cc0000;
+        }
+
+        div#paginated_records {
+            overflow: auto;
+            white-space: nowrap;
+            height : 600px;
+
+        }
+        
+        .record a {
+            -webkit-transition-property: font-size;
+            -webkit-transition-duration: 0.5s;
+
+            font-size: 10px;
+            width:100%;
+        }
+        
+        .record a:hover {
+            -webkit-transition-property: font-size;
+            -webkit-transition-duration: 0.5s;
+            font-size: 12px;
+            font-weight: bold;
+            background: #cccccc;
+            color: #707070;
+        }
+        .record a:link {
+            text-decoration: none;
+            color: #303030;
+        }
+        .record a:visited {
+            text-decoration: none;
+            color: #303030;
+        }
+        .record a:active {
+            text-decoration: none;
+            color: #803030;
+        }
+
+        div#notifications {
+            position:absolute;
+            width:100%;
+            bottom:6px;
+        }
+
+        div#baz {
+            width: 32%;
+            float : right;
+        }
+        table#record_control_container {
+            width: 60%;
+            float : left;
+            padding: 12px;
+            border-style: solid;
+            border-width: 1px;
+            border-color: #6f6f6f;
+            height: 600px;
+            overflow:auto;
+            background: #ffffff;
+        }
+        td {
+            z-index: 999;
+        }
+    </style>
+
+
+</head>
+
+<body>
+<h1>RESTful Record Editor</h1>
+<hr/>
+    <form id="api_admin_form">
+        <label for="api_link">Relative link</label>
+        <input type="text" name='api_link' id="api_link"/>
+        <label for="api_username">Username</label>
+        <input type="text" name="api_username" id="api_username"/>
+        <label for="api_password">Password</label>
+        <input type="password" name="api_password" id="api_password"/>
+        <input type="submit" value="Load from schema"/>
+    </form>
+<hr/>
+
+    <div id="baz">
+        <h4>Record list</h4>
+        <div id="paginated_records">
+
+        </div>
+
+        <div id="paginator">
+            Page back/forward:
+            <a href="#paginated_records" id="page_beginning">&lt;&lt;</a>&nbsp;&nbsp;
+            <a href="#paginated_records" id="page_back">&lt;</a>&nbsp;&nbsp;
+            <a href="#paginated_records" id="page_fwd">&gt;</a>&nbsp;&nbsp;
+            <a href="#paginated_records" id="page_end">&gt;&gt;</a>
+            <label for='name_field'>&nbsp;&nbsp;|&nbsp;&nbsp;Record name in</label><select id="name_field"></select>
+        </div>
+    </div>
+
+    <form id="record_editor">
+        <h4>Editor</h4>
+        <table id='record_control_container'>
+
+        </table>
+        <input type="button" id="add_new" value="Add New"/>
+        <input type="submit" id="update_existing" value="Update Existing"/>
+    </form>
+
+<div id="notifications">
+    <hr/>
+    <div class='note' id="noauth_edit">*User not authorized to edit existing records.</div>
+    <div class='note' id="noauth_delete">*User not authorized to delele existing records.</div>
+    <div class='note' id="noauth_append">*User not authorized to append existing records.</div>
+</div>
+
+</body>
+</html>

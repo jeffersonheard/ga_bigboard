@@ -1,0 +1,1 @@
+This will be filled in in a day or two.  I managed to type 'rm' instead of 'vi' before I did a 'git commit' and now look where that got me.  Lesson for you all:  Always commit your work before editing it.
