@@ -25,6 +25,7 @@ function BigBoard(args) {
     var my_user = either(args, 'user', null);
     var debug = either(args, 'debug', false);
     var main_loop;
+    var hash;
 
     var location = [0,0];
 
@@ -114,7 +115,8 @@ function BigBoard(args) {
             data : { room : room.id, limit : 0, format : 'json' },
             accepts : 'application/json',
             success : receivedAnnotations,
-            error : errorHandler(either(args, 'refreshAnnotationsError', noop))
+            error : errorHandler(either(args, 'refreshAnnotationsError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash) }
         })
     }
     
@@ -126,7 +128,8 @@ function BigBoard(args) {
             data : { room : room.id, limit : 0, id__gt : when, format : 'json' },
             accepts : 'application/json',
             success : receivedChats,
-            error : errorHandler(either(args, 'refreshChatError', noop))
+            error : errorHandler(either(args, 'refreshChatError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
 
@@ -147,7 +150,8 @@ function BigBoard(args) {
             },
             accepts : 'application/json',
             success : receivedOverlays,
-            error : errorHandler(either(args, 'refreshOverlaysError', noop))
+            error : errorHandler(either(args, 'refreshOverlaysError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
     
@@ -158,7 +162,8 @@ function BigBoard(args) {
             data : { room : room.id, limit : 0, format : 'json' },
             accepts : 'application/json',
             success : receivedParticipants,
-            error : errorHandler(either(args, 'refreshParticipantsError', noop))
+            error : errorHandler(either(args, 'refreshParticipantsError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
     
@@ -169,7 +174,9 @@ function BigBoard(args) {
             data : { users__id : my_userid, limit : 0, format : 'json' },
             accepts : 'application/json',
             success : receivedRoles,
-            error : errorHandler(either(args, 'refreshRolesError', noop))
+            error : errorHandler(either(args, 'refreshRolesError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+
         });
     }
 
@@ -180,7 +187,8 @@ function BigBoard(args) {
             data : { name : room_name, format : 'json' },
             accepts : 'application/json',
             success : receivedRoom,
-            error : errorHandler(either(args, 'failedRoomGet', noop))
+            error : errorHandler(either(args, 'failedRoomGet', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
     
@@ -191,7 +199,8 @@ function BigBoard(args) {
             data : { name : room_name, limit : 0, format : 'json' },
             accepts : 'application/json',
             success : receivedSharedOverlays,
-            error : errorHandler(either(args, 'refreshSharedOverlaysError', noop))
+            error : errorHandler(either(args, 'refreshSharedOverlaysError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
 
@@ -206,7 +215,8 @@ function BigBoard(args) {
             data : { users__id : my_userid, limit : 0, format : 'json' },
             accepts : 'application/json',
             success : receivedRoles,
-            error : errorHandler(either(args, 'refreshRolesError', noop))
+            error : errorHandler(either(args, 'refreshRolesError', noop)),
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
 
         if(debug) { console.log("succesfully logged in"); }
@@ -217,6 +227,9 @@ function BigBoard(args) {
         room_name = room;
         my_username = username;
         my_password = password;
+
+        var tok = username + ':' + password;
+        hash = "Basic " + btoa(tok);
 
         $.ajax({
             url : 'join',

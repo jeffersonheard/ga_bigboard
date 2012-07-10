@@ -17,7 +17,7 @@
 ####### EDIT BELOW THIS LINE ##################################################
 
 name = 'ga_bigboard'
-version = '4.0'
+version = '4.1'
 packages = ['ga_bigboard']
 author = 'Jeff Heard'
 author_email = 'jeff@renci.org'

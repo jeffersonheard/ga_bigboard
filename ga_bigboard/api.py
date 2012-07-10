@@ -8,6 +8,29 @@ from ga_bigboard import models
 from django.contrib.auth.models import User
 from ga_ows.tastyhacks import GeoResource
 
+class WriteOnlyMineAuthorization(Authorization):
+    def __init__(self, user_getter=None):
+        super(WriteOnlyMineAuthorization, self).__init__()
+        self.user_getter = user_getter
+
+    def is_authorized(self, request, object=None):
+        if not object:
+            return True
+        elif not self.user_getter and hasattr(object, 'user'):
+            return request.user == object.user
+        elif not self.user_getter and hasattr(object, 'owner'):
+            return request.user == object.owner
+        else:
+            return False
+
+class ReadOnlyMyRoleAuthorization(Authorization):
+    def apply_limits(self, request, object_list):
+        if request and hasattr(request, 'user'):
+            return object_list.filter(roles__users=request.user)
+        else:
+            return object_list.none()
+
+
 class MultipartResource(object):
     def deserialize(self, request, data, format=None):
         if not format:
@@ -27,7 +50,6 @@ class MultipartResource(object):
 class UserResource(ModelResource):
     class Meta:
         authentication = BasicAuthentication()
-        authorization = Authorization()
 
         queryset = User.objects.all()
         allowed_methods = ('get',)
@@ -61,7 +83,7 @@ class OverlayResource(ModelResource):
 
     class Meta:
         authentication = BasicAuthentication()
-        authorization = Authorization()
+        authorization = ReadOnlyMyRoleAuthorization()
         queryset = models.Overlay.objects.all()
         resource_name = 'overlay'
         allowed_methods = ('get','post','put','delete')
@@ -89,12 +111,9 @@ class RoomResource(GeoResource):
         }
 
     def obj_create(self, bundle, request=None, **kwargs):
-        return super(RoomResource, self).obj_create(bundle, request, owner=request.user.pk)
+        return super(RoomResource, self).obj_create(bundle, request, owner=request.user)
 
 
-
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(owner=request.user.pk)
 
 class AnnotationResource(MultipartResource, GeoResource):
     room = f.ForeignKey(RoomResource, 'room')
@@ -116,8 +135,6 @@ class AnnotationResource(MultipartResource, GeoResource):
         bundle.data['geometry'] = GEOSGeometry(bundle.data['geometry'])
         return super(AnnotationResource, self).obj_create(bundle, request, user=request.user)
 
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user=request.user)
 
 class SharedOverlayResource(ModelResource):
     room = f.ForeignKey(RoomResource, 'room')
@@ -157,8 +174,6 @@ class ParticipantResource(GeoResource):
     def obj_create(self, bundle, request=None, **kwargs):
         return super(ParticipantResource, self).obj_create(bundle, request, user=request.user.pk)
 
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user=request.user.pk)
 
 class ChatResource(GeoResource):
     room = f.ForeignKey(to=RoomResource, attribute='room')
@@ -179,9 +194,6 @@ class ChatResource(GeoResource):
 
     def obj_create(self, bundle, request=None, **kwargs):
         return super(ChatResource, self).obj_create(bundle, request, user=request.user)
-
-    def apply_authorization_limits(self, request, object_list):
-        return object_list.filter(user=request.user.pk)
 
 
 api_v4 = Api('v4')

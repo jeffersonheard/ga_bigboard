@@ -21,8 +21,7 @@ $(document).ready(function() {
         area_control :    new OpenLayers.Control.Measure(OpenLayers.Handler.Polygon, {
             persist: true
         }),
-        attribution : new OpenLayers.Control.Attribution(),
-        layer_switcher : new OpenLayers.Control.LayerSwitcher()
+        attribution : new OpenLayers.Control.Attribution()
     };
 
     var lastCenter = undefined;
