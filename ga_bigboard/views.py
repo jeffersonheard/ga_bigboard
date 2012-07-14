@@ -75,8 +75,6 @@ class HeartbeatView(dv.View):
         if request.user != request.session['participant'].user:
             return HttpResponseForbidden()
 
-        print request.session['participant'].last_heartbeat
-
         request.session['participant'].where = Point(float(request.GET['x']), float(request.GET['y']), srid=4326)
         request.session['participant'].last_heartbeat = datetime.datetime.utcnow()
         request.session['participant'].save()
@@ -88,7 +86,6 @@ class RecenterView(dv.View):
     def get(self, request, *args, **kwargs):
         if request.user != request.session['participant'].user:
             return HttpResponseForbidden()
-
 
         request.session['room'].center = Point(float(request.GET['x']), float(request.GET['y']), srid=4326)
         request.session['room'].zoom_level = int(request.GET['z'])

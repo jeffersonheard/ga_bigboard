@@ -126,13 +126,14 @@ function Overlay(m, server_object) {
     var active = false;
     var sharing = false;
 
+    evaluable_options = "options=" + server_object.default_creation_options + ";";
     switch(server_object.kind) {
         case 'WMS':
-            eval("options=" + server_object.default_creation_options + ";");
+            eval(evaluable_options);
             layer = new OpenLayers.Layer.WMS(server_object.name, options.url, options, options);
             break;
         case 'WFS':case 'GeoJSON':
-            eval("options=" + server_object.default_creation_options + ";");
+            eval(evaluable_options);
             options.renderers = ['Canvas','SVG','VML'];
             layer = new OpenLayers.Layer.Vector(server_object.name, options);
             break;
