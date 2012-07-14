@@ -14,7 +14,7 @@ from threading import local
 
 log = getLogger(__name__)
 
-from terrahub.index import GeoIndex
+from ga_spatialnosql.index import GeoIndex
 from cera import settings
 from cera.models import *
 

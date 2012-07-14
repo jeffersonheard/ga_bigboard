@@ -1,5 +1,5 @@
 from osgeo import ogr
-from terrahub.index import GeoIndex
+from ga_spatialnosql.index import GeoIndex
 from datetime import datetime
 from django.contrib.gis.geos import Polygon
 from cera import query
