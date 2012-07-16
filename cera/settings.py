@@ -46,7 +46,7 @@ VARIABLES = {
 from celery.schedules import crontab
 
 # regular tasks to perform.
-CELERYBEAT_SCHEDULE = {
+APP_CELERYBEAT_SCHEDULE = {
     'cera-append_new_run' : {
         'task' : 'cera.tasks.add_new_run',
         'schedule' : crontab(minute=5, hour=[0,6,12,18])
@@ -61,7 +61,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 
-LOGGERS = {
+APP_LOGGERS = {
     'cera.tasks' : {
         'handlers' : ['console'],
         'propagate' : True,
