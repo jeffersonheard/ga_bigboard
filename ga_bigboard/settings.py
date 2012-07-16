@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-LOGGING = {
+APP_LOGGING = {
     'ga_bigboard.views' : {
         'handlers': ['console'],
         'level': 'INFO',
@@ -8,7 +8,7 @@ LOGGING = {
     }
 }
 
-CELERYBEAT_SCHEDULE = {
+APP_CELERYBEAT_SCHEDULE = {
     'ga_bigboard-reap_old_participants' : {
         'task' : 'ga_bigboard.tasks.reap_old_participants',
         'schedule' : timedelta(minutes=5)
