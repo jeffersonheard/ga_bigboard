@@ -1,0 +1,17 @@
+*.swp
+*.pyc
+*.pyx
+*.pyo
+*~
+build/
+dist/
+*.egg-info/
+doc/build/*
+.idea/
+ga_spatialnosql/static/ga_spatialnosql/OpenLayers.js
+ga_spatialnosql/static/ga_spatialnosql/OpenLayers.mobile.js
+ga_spatialnosql/static/ga_spatialnosql/jquery-1.7.2.min.js
+ga_spatialnosql/static/ga_spatialnosql/jquery-ui
+ga_spatialnosql/static/ga_spatialnosql/jquery-ui-1.8.18.custom.zip
+ga_spatialnosql/static/ga_spatialnosql/jquery.mobile-1.1.0
+ga_spatialnosql/static/ga_spatialnosql/json2.js
