@@ -309,7 +309,8 @@ function BigBoard(args) {
             cache: false,
             contentType: false,
             processData: false,
-            success: function(data) { console.log('success'); console.log(data); }
+            success: function(data) { console.log('success'); console.log(data); },
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
 
         $("#annotation_file").val(null);
@@ -348,7 +349,8 @@ function BigBoard(args) {
             type: "POST",
             data: JSON.stringify(data),
             dataType: 'json',
-            processData: false
+            processData: false,
+            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
         });
     }
 
