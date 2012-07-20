@@ -5,4 +5,4 @@ import datetime
 @task(ignore_result=True)
 def reap_old_participants():
     then = datetime.datetime.now() - datetime.timedelta(minutes=5)
-    Participant.objects.filter(last_heartbeat__lt=then).delete()
+    models.Participant.objects.filter(last_heartbeat__lt=then).delete()
