@@ -38,16 +38,20 @@ class JoinView(dv.View):
         else:
             room = request.GET['room']
             room = models.Room.objects.get(name=room)
-            if models.Participant.objects.filter(room=room, user=user).count() == 0:
-                participant = models.Participant.objects.create(
-                    user=user,
-                    where=Point(0, 0, srid=4326),
-                    room=room
-                )
-                participant.roles.add(*models.Role.objects.filter(users=user))
 
-                request.session['room'] = room
-                request.session['participant'] = participant
+            # remove the participant upon rejoining to prevent one user from logging in multiple places as a single participant.
+            if models.Participant.objects.filter(room=room, user=user).count() != 0:
+                models.Participant.objects.filter(room=room, user=user).delete()
+
+            participant = models.Participant.objects.create(
+                user=user,
+                where=Point(0, 0, srid=4326),
+                room=room
+            )
+            participant.roles.add(*models.Role.objects.filter(users=user))
+
+            request.session['room'] = room
+            request.session['participant'] = participant
 
             return HttpResponse(json.dumps({
                 "user_id" : user.pk,
@@ -65,6 +69,7 @@ class LeaveView(dv.View):
             request.session['participant'].delete()
             del request.session['participant']
             del request.session['room']
+            request.session.flush()
 
             return HttpResponse(json.dumps({"ok" : True}), mimetype='application/json')
         else:
@@ -72,6 +77,7 @@ class LeaveView(dv.View):
 
 class HeartbeatView(dv.View):
     def get(self, request, *args, **kwargs):
+
         if request.user != request.session['participant'].user:
             return HttpResponseForbidden()
 
