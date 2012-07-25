@@ -271,7 +271,7 @@ $(document).ready(function() {
                     });
 
                 }
-                else if(lastCenter.lon != data.center.coordinates[0] || lastCenter.lat != data.center.coordinates[1] ) {
+                else if(Math.abs(lastCenter.lon - data.center.coordinates[0]) > 0.0001 || Math.abs(lastCenter.lat - data.center.coordinates[1]) > 0.0001) {
                     newCenter = new OpenLayers.LonLat(data.center.coordinates[0], data.center.coordinates[1]);
                     lastCenter = newCenter.clone();
 
