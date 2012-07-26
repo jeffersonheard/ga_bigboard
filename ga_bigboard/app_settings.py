@@ -2,7 +2,7 @@ from datetime import timedelta
 
 APP_LOGGING = {
     'ga_bigboard.views' : {
-        'handlers': ['console'],
+        'handlers': ['ga_bigboard'],
         'level': 'INFO',
         'propagate': True,
     }
