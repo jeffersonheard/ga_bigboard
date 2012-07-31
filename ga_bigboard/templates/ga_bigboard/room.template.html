@@ -37,7 +37,7 @@
             visibility: hidden;
         }
 
-        ul.navigator {
+        .navigator {
             width : 18%;
             float : left;
         }
@@ -108,19 +108,48 @@
             height:80px;
             overflow:auto;
         }
+
+        .help_text {
+            font-size-adjust: 0.8;
+        }
     </style>
 </head>
 <body>
 
     <div data-role='page' id='main_page'>
         <div id='content' data-role="content">
-            <ul data-role="listview" id="help" class='navigator'>
-                <li data-role='list-divider'><div>Help</div></li>
-                <li><div class='help_text'>
-                    This is the big board.
-                    </div>
-                </li>
-            </ul>
+                <div id="help" class='navigator' class='help_text'>
+                    <p>This is The Big Board, Geoanalytics' "teleconferencing over maps" style collaborative environemnt.
+                    The Big Board aims to provide a shared workspace similar to a teleconference, but tailored to the
+                    needs of people whose data can and should be mapped.
+                    </p>
+
+                    <p>The Big Board consists of a number of conference rooms, each of which has a shared map, a shared
+                        set of overlays, a chat room, and a set of drawing tools.  The conference room is a web-based
+                        space that multiple people can log into simply by surfing to this site and selecting the
+                        appropriate room.
+                    </p><p>
+                        The shared set of overlays can be
+                        accessed via the "overlays" tab.  Clicking on an overlay will toggle its display. There might be
+                        a second or two of lag depending on what kind of overlay you clicked, but this is normal.  Wait
+                        and it will appear.  Clicking "share" on the overlay will share it with anyone else in the room.
+                    </p>
+
+                    <p>
+                        In the Annotations tab, you have several sets of tools.  In a custom installation ,these can be
+                        customized to the kind of work you are doing and can include informational tools that help you
+                        select, inspect, cross-reference, or analyze data.  The basic set of tools allow drawing and
+                        centering the map on a specific address.
+                    </p>
+
+                    <p>
+                        The discussions tab shows a chatroom.  Clicking on a participant will center the map on them
+                        (note that the big board tracks and displays your location).  Otherwise chat is like your basic
+                        conferenced chat room.
+                    </p>
+
+                </div>
+
 
             <ul data-role='listview' id="join" class="navigator">
                 <li data-role='list-divider'>Join Room</li>
