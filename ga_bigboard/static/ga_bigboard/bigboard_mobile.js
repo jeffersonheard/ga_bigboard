@@ -358,7 +358,7 @@ $(document).ready(function() {
     function menuSwitcher(evt) {
         var clicked = $(evt.currentTarget).attr('id').substring("show_".length);
 
-        $("ul.navigator").each(function(index, elt) {
+        $(".navigator").each(function(index, elt) {
             if($(elt).attr('id') == clicked) {
                 $(elt).show();
             }
@@ -468,7 +468,7 @@ $(document).ready(function() {
     });
 
     $("a.menuitem").click(menuSwitcher);
-    $("ul.navigator").hide();
+    $(".navigator").hide();
     $("#join").show();
     $("#overlay_base").hide();
 

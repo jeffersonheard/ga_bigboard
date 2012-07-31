@@ -37,7 +37,7 @@
             visibility: hidden;
         }
 
-        ul.navigator {
+        .navigator {
             width : 18%;
             float : left;
         }
@@ -108,15 +108,17 @@
             height:80px;
             overflow:auto;
         }
+
+        .help_text {
+            font-size-adjust: 0.8;
+        }
     </style>
 </head>
 <body>
 
     <div data-role='page' id='main_page'>
         <div id='content' data-role="content">
-            <ul data-role="listview" id="help" class='navigator'>
-                <li data-role='list-divider'><div>Help</div></li>
-                <li><div class='help_text'>
+                <div id="help" class='navigator' class='help_text'>
                     <p>This is The Big Board, Geoanalytics' "teleconferencing over maps" style collaborative environemnt.
                     The Big Board aims to provide a shared workspace similar to a teleconference, but tailored to the
                     needs of people whose data can and should be mapped.
@@ -146,9 +148,8 @@
                         conferenced chat room.
                     </p>
 
-                    </div>
-                </li>
-            </ul>
+                </div>
+
 
             <ul data-role='listview' id="join" class="navigator">
                 <li data-role='list-divider'>Join Room</li>
