@@ -7,12 +7,12 @@ from ga_bigboard import views
 
 urlpatterns = patterns('',
     url(r'^', include(api_v4.urls)),
-    url(r'^room', views.RoomView.as_view()),
-    url(r'^join', views.JoinView.as_view()),
-    url(r'^leave', views.LeaveView.as_view()),
-    url(r'^heartbeat', views.HeartbeatView.as_view()),
-    url(r'^center', views.RecenterView.as_view()),
-    url(r'^admin',views.TastypieAdminView.as_view()),
+    url(r'^room', views.RoomView.as_view(), name='ga_bigboard_room'),
+    url(r'^join', views.JoinView.as_view(), name='ga_bigboard_join'),
+    url(r'^leave', views.LeaveView.as_view(), name='ga_bigboard_leave'),
+    url(r'^heartbeat', views.HeartbeatView.as_view(), name='ga_bigboard_heartbeat'),
+    url(r'^center', views.RecenterView.as_view(), name='ga_bigboard_center'),
+    url(r'^admin',views.TastypieAdminView.as_view(), name='ga_bigboard_admin'),
 
     # Examples:
     # url(r'^$', 'ga.views.home', name='home'),
@@ -24,3 +24,7 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
 )
+
+# url(r'^', include(api_v4.urls, namespace='ga_bigboard')),
+# reverse('ga_bigboard:api_dispatch_list', kwargs={'resource_name':'chat','api_name':'v4'})
+# {% url ga_bigboard:api_dispatch_list resource_name='chat' api_name='v4'  %}
