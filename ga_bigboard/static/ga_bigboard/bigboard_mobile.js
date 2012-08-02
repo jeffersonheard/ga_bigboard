@@ -1,16 +1,18 @@
 var map;
 var bb;
 var controls;
-
+var initted = false;
 
 $(document).ready(function() {
     var gm = new OpenLayers.Projection("EPSG:4326");
     var sm = new OpenLayers.Projection("EPSG:3857");
-    var annotationLayer = new OpenLayers.Layer.Vector("Annotations");
-    var participantsLayer = new OpenLayers.Layer.Vector("Participants");
+    var annotationLayer = new OpenLayers.Layer.Vector("Annotations", { renderers: ['Canvas','SVG','VML'], projection: sm, alwaysInRange: true });
+    var participantsLayer = new OpenLayers.Layer.Vector("Participants", { renderers: ['Canvas','SVG','VML'], projection: sm, alwaysInRange: true });
 
     controls = {
-        navigate_control :new OpenLayers.Control.TouchNavigation({ dragPanOptions: { enableKinetic: true} }),
+        // DEBUG ONLY: layer_control : new OpenLayers.Control.LayerSwitcher(),
+        navigate_control :new OpenLayers.Control.Navigation({ dragPanOptions: { enableKinetic: true}, zoomWheelEnabled: true}),
+        keynav_control : new OpenLayers.Control.KeyboardDefaults(),
         point_control : new OpenLayers.Control.DrawFeature(annotationLayer, OpenLayers.Handler.Point),
         path_control : new OpenLayers.Control.DrawFeature(annotationLayer, OpenLayers.Handler.Path),
         polygon_control : new OpenLayers.Control.DrawFeature(annotationLayer, OpenLayers.Handler.Polygon),
@@ -25,14 +27,15 @@ $(document).ready(function() {
     };
 
     var lastCenter = undefined;
-    var myLocation = [0,0];
     var participants = {};
     var annotations = {};
     var geojson = new OpenLayers.Format.GeoJSON();
     var roles = null;
     var overlays = {};
 
-    function init() {
+    function init() { if(!initted) {
+        initted = true;
+
         bb = BigBoard({
             room_name : $("#room_name").val(),
             username : $("#username").val(),
@@ -100,15 +103,15 @@ $(document).ready(function() {
             },
 
             receivedOverlays: function(data) {
-                console.log("overlays:");
-                console.log(data);
-
                 iter(data, function(obj) {
                     // append overlays to the overlay tab.  We only support WMS right now.
                     if(!overlays.hasOwnProperty(obj.resource_uri)) {
                         overlays[obj.resource_uri] = new Overlay(map, obj);
                     }
                 });
+                map.setLayerIndex(annotationLayer, 9999);
+                map.setLayerIndex(participantsLayer, 10000);
+
             },
 
             receivedParticipants: function(data) {
@@ -169,10 +172,10 @@ $(document).ready(function() {
                 });
 
                 // TODO - click on user name in participant list to center on that user.
-                $(".username").click(function(k) {
-                    var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
-                    map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
-                })
+                //$(".username").click(function(k) {
+                //    var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
+                //    map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
+                //});
 
                 participantsLayer.redraw();
             },
@@ -204,14 +207,14 @@ $(document).ready(function() {
                                 baseLayer = new OpenLayers.Layer.Google("OpenStreetMap");
                             break;
                         case "WMS":
-                                baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, data.base_layer_wms.default_creation_options);
+                                baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
                             break;
                     }
                     map = new OpenLayers.Map({
                         div: "map",
                         theme : null,
                         projection: sm,
-                        numZoomLevels: 18,
+                        numZoomLevels: 20,
                         controls: values(controls),
                         layers: [baseLayer, annotationLayer, participantsLayer]
                     });
@@ -222,6 +225,7 @@ $(document).ready(function() {
                     map.setCenter(newCenter, data.zoom_level);
                     annotationLayer.projection = sm;
                     annotationLayer.maxExtent = map.maxExtent;
+                    participantsLayer.maxExtent = map.maxExtent;
 
                     //
                     // setup all the drawing controls
@@ -293,9 +297,14 @@ $(document).ready(function() {
                     overlays[k].unshare();
                 });
 
+                map.setLayerIndex(annotationLayer, 9999);
+                map.setLayerIndex(participantsLayer, 10000);
             }
         });
 
+        //
+        // Make sure the user has enabled geolocation before tracking.
+        //
         if(navigator.geolocation) {
             navigator.geolocation.watchPosition(function(position) {
                 bb.location[0] = position.coords.longitude;
@@ -306,7 +315,6 @@ $(document).ready(function() {
         // leave when someone clicks the "leave" button
         $("#leave").click(function() {
             bb.leave();
-            return false;
         });
 
         // send chats when someone clicks the > button
@@ -318,7 +326,7 @@ $(document).ready(function() {
             }
             return false;
         });
-    }
+    }}
 
     // fix height of content
     function fixContentHeight() {
@@ -378,28 +386,29 @@ $(document).ready(function() {
         iter(annotations, function(ann) {
             ann.selected = ann.selected || ann.attributes.resource_uri === annotation.attributes.resource_uri;
         });
-    }
+    };
     controls.select_control.onUnselect = function(annotation) {
         iter(annotations, function(ann) {
             ann.selected = ann.selected && ann.attributes.resource_uri !== annotations.attributes.resource_uri;
         });
-    }
+    };
 
 
-    $("#join_room").submit(function() {
-        bb.join(
-            $("#room").val(),
-            $("#username").val(),
-            $("#password").val()
-        );
-        return false;
-    });
+
+    //$("#join_room").submit(function() {
+    //    bb.join(
+    //        $("#room").val(),
+    //        $("#username").val(),
+    //        $("#password").val()
+    //    );
+    //    return false;
+    //});
 
     $("#center_all_here").submit(function() {
         var c = map.getCenter();
         c.transform(sm, gm);
 
-        $.get('center', {
+        $.get('../center/', {
             x:c.lon,
             y:c.lat,
             z:map.getZoom()
@@ -411,7 +420,7 @@ $(document).ready(function() {
         iter(annotations, function(ann) {
            if(ann.selected) {
                $.ajax({
-                   url: ann.attributes.resource_uri,
+                   url: ann.attributes.resource_uri + "?username=" + user_name + "&api_key=" + api_key,
                    type: 'DELETE'
                });
                annotationLayer.destroyFeatures(ann);
@@ -469,7 +478,7 @@ $(document).ready(function() {
 
     $("a.menuitem").click(menuSwitcher);
     $(".navigator").hide();
-    $("#join").show();
+    $("#overlays").show();
     $("#overlay_base").hide();
 
     $("#annotation_file").hide();
@@ -487,6 +496,8 @@ $(document).ready(function() {
             $("label[for=annotation_text]").hide();
             $("#annotation_file").show();
             $("label[for=annotation_file]").show();
-        };
+        }
     });
+
+    bb.join(room_name);
 });

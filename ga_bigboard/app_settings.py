@@ -14,3 +14,5 @@ APP_CELERYBEAT_SCHEDULE = {
         'schedule' : timedelta(minutes=5)
     }
 }
+
+USE_ALT_LOGIN = True

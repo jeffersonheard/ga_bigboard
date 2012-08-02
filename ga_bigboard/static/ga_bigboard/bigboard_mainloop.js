@@ -18,9 +18,10 @@ function BigBoard(args) {
     var received_room = false;
     var received_shared_overlays = false;
 
-    var room_name = args.room_name;
-    var my_username = args.username;
-    var my_password = args.password;
+
+    // TODO - all this stuff can be simplified now that room, username, and api_key are part of the global variable stack.
+    var my_username = user_name;
+    var my_password = api_key;
     var my_userid = either(args, 'user_id', null);
     var my_user = either(args, 'user', null);
     var debug = either(args, 'debug', false);
@@ -28,6 +29,8 @@ function BigBoard(args) {
     var hash;
 
     var location = [0,0];
+
+    console.log('creating bigboard object');
 
     function errorHandler(func) {
         return function(data, textStatus, thrownError) {
@@ -111,12 +114,11 @@ function BigBoard(args) {
     function refreshAnnotations() {
         received_annotations = false;
         $.ajax({
-            url : 'v4/annotation',
-            data : { room : room.id, limit : 0, format : 'json' },
+            url : '../api/v4/annotation/',
+            data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedAnnotations,
-            error : errorHandler(either(args, 'refreshAnnotationsError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash) }
+            error : errorHandler(either(args, 'refreshAnnotationsError', noop))
         })
     }
     
@@ -124,20 +126,19 @@ function BigBoard(args) {
         received_chats = false;
         var when = last_chat_update;
         $.ajax({
-            url : 'v4/chat',
-            data : { room : room.id, limit : 0, id__gt : when, format : 'json' },
+            url : '../api/v4/chat/',
+            data : { room : room.id, limit : 0, id__gt : when, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedChats,
-            error : errorHandler(either(args, 'refreshChatError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            error : errorHandler(either(args, 'refreshChatError', noop))
         });
     }
 
     function refreshOverlays() {
         received_overlays = false;
-        var url = 'v4/overlay?';
+        var url = '../api/v4/overlay/?';
         iter(roles, function(r) {
-            url += "roles__id=" + r.id + "&"
+            url += "roles__id__in=" + r.id + "&"
         });
         url = url.substring(0, url.length-1);
 
@@ -146,36 +147,35 @@ function BigBoard(args) {
             data : {
                 room__name : room_name,
                 limit : 0,
-                format : 'json'
+                format : 'json',
+                username : user_name,
+                api_key : api_key
             },
             accepts : 'application/json',
             success : receivedOverlays,
-            error : errorHandler(either(args, 'refreshOverlaysError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            error : errorHandler(either(args, 'refreshOverlaysError', noop))
         });
     }
     
     function refreshParticipants() {
         received_participants = false;
         $.ajax({
-            url : 'v4/participant',
-            data : { room : room.id, limit : 0, format : 'json' },
+            url : '../api/v4/participant/',
+            data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedParticipants,
-            error : errorHandler(either(args, 'refreshParticipantsError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            error : errorHandler(either(args, 'refreshParticipantsError', noop))
         });
     }
     
     function refreshRoles() {
         received_roles = false;
         $.ajax({
-            url : 'v4/role',
-            data : { users__id : my_userid, limit : 0, format : 'json' },
+            url : '../api/v4/role/',
+            data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoles,
-            error : errorHandler(either(args, 'refreshRolesError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            error : errorHandler(either(args, 'refreshRolesError', noop))
 
         });
     }
@@ -183,8 +183,8 @@ function BigBoard(args) {
     function refreshRoom() {
         received_room = false;
         $.ajax({
-            url : 'v4/room',
-            data : { name : room_name, format : 'json' },
+            url : '../api/v4/room/',
+            data : { name : room_name, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoom,
             error : errorHandler(either(args, 'failedRoomGet', noop)),
@@ -195,8 +195,8 @@ function BigBoard(args) {
     function refreshSharedOverlays() {
         received_shared_overlays = false;
         $.ajax({
-            url : 'v4/shared_overlay',
-            data : { name : room_name, limit : 0, format : 'json' },
+            url : '../api/v4/shared_overlay/',
+            data : { name : room_name, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedSharedOverlays,
             error : errorHandler(either(args, 'refreshSharedOverlaysError', noop)),
@@ -206,34 +206,39 @@ function BigBoard(args) {
 
     function receivedLoginCredentials(data, textStatus, jqXHR) {
         my_userid = data.user_id;
-        my_user = '/ga_bigboard/v4/user/' + data.user_id + '/'; // "/ga_bigboard/v4/user/1/"
+        my_user = data.owner;
         room = data.room;
 
         $.ajax({
             async : false,
-            url : 'v4/role',
-            data : { users__id : my_userid, limit : 0, format : 'json' },
+            url : '../api/v4/role/',
+            data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoles,
-            error : errorHandler(either(args, 'refreshRolesError', noop)),
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            error : errorHandler(either(args, 'refreshRolesError', noop))
         });
 
         if(debug) { console.log("succesfully logged in"); }
         either(args, 'loginSuccessful', noop)(data, textStatus, jqXHR);
     }
 
-    function join(room, username, password) {
-        room_name = room;
-        my_username = username;
-        my_password = password;
+    function join(room) {
+        if(!room_name || !user_name || !api_key) {
+            console.log("Please define the global variables room, username, and api_key in a script tag above bigboard_mainloop.js. (room, username, and api_key are listed subsequently)");
+            console.log(room);
+            console.log(user_name);
+            console.log(api_key);
+        }
 
-        var tok = username + ':' + password;
-        hash = "Basic " + btoa(tok);
+        my_username = user_name;
+        my_password = api_key;
+
+        var tok = user_name + ':' + api_key;
+        hash = "Basic " + tok;
 
         $.ajax({
-            url : 'join',
-            data : { username: my_username, password: my_password, room : room_name },
+            url : '../join/',
+            data : { room : room_name },
             accepts : 'application/json',
             success : receivedLoginCredentials,
             error : errorHandler(either(args, 'failedLogin', noop))
@@ -249,7 +254,8 @@ function BigBoard(args) {
 
     function leave() {
         $.ajax({
-            url : 'leave',
+            async: false, // in case an implementor wants to go somewhere after leaving, this ensures that the function completes before the browser leaves.
+            url : '../leave/',
             accepts : 'application/json',
             success : resignedLoginCredentials,
             error : errorHandler(either(args, 'failedLogout', noop))
@@ -260,7 +266,7 @@ function BigBoard(args) {
 
     function heartBeat() {
         $.ajax({
-            url : 'heartbeat',
+            url : '../heartbeat/',
             data : { x : location[0], y : location[1] },
             accepts : 'application/json',
             success : function() { if(debug) { console.log("heartbeat"); }},
@@ -270,51 +276,79 @@ function BigBoard(args) {
 
     function persistAnnotation(feature) {
         var kind = $("#annotation_kind").val();
-        var data = new FormData();
-        var wkt = new OpenLayers.Format.WKT().write(feature);
+        var data = {};
+        var wkt = JSON.parse(new OpenLayers.Format.GeoJSON().write(feature));
+        var file, encoded;
+        var wait = false;
         console.log(wkt);
+
+        var reader = new FileReader();
 
         feature.attributes.sent = true;
 
-        data.append('associated_overlay', "");
-        data.append('room', room.resource_uri);
-        data.append('kind', kind);
-        data.append('geometry', 'SRID=3857;' + wkt);
+        data = {
+            associated_overlay: null,
+            room : room.resource_uri,
+            kind : kind,
+            geometry : wkt.geometry,
+            text : null,
+            media : null,
+            audio : null,
+            video : null,
+            link : null,
+            image : null
+        };
 
         switch(kind) {
             case 'audio':
-                jQuery.each($("#annotation_file")[0].files, function(i, file) { data.append('audio', file); });
-                break;
             case 'video':
-                jQuery.each($("#annotation_file")[0].files, function(i, file) { data.append('video', file); });
-                break;
-            case 'link':
-                data.append('text', $("#annotation_text").val());
-                break;
             case 'image':
-                jQuery.each($("#annotation_file")[0].files, function(i, file) { data.append('image', file); });
-                break;
-            case 'text':
-                data.append('text', $("#annotation_text").val());
-                break;
             case 'media':
-                jQuery.each($("#annotation_file")[0].files, function(i, file) { data.append('media', file); });
+                file = $("#annotation_file")[0].files[0];
+                wait = true;
+                break;
+            default:
+                data[kind] = $("#annotation_text").val();
                 break;
         }
 
-        $.ajax({
-            url : 'v4/annotation/',
-            type : 'POST',
-            data: data,
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function(data) { console.log('success'); console.log(data); },
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
-        });
+        if(!wait) {
+            $.ajax({
+                url : '../api/v4/annotation/?username=' + user_name + "&api_key=" + api_key,
+                type : 'POST',
+                data: JSON.stringify(data),
+                cache: false,
+                contentType: 'application/json',
+                processData: false,
+                error: errorHandler(noop),
+                success: function(data) { console.log('success'); console.log(data); }
+            });
+            $("#annotation_file").val(null);
+            $("#annotation_text").val('');
 
-        $("#annotation_file").val(null);
-        $("#annotation_text").val('');
+        }
+        else {
+            reader.onload = function(event) {
+                encoded = btoa(event.target.result);
+                data[kind] = { name : $("#annotation_file")[0].files[0].name, file : encoded };
+
+                $.ajax({
+                    url : '../api/v4/annotation/?username=' + user_name + "&api_key=" + api_key,
+                    type : 'POST',
+                    data: JSON.stringify(data),
+                    cache: false,
+                    contentType: 'application/json',
+                    processData: false,
+                    error: errorHandler(noop),
+                    success: function(data) { console.log('success'); console.log(data); }
+                });
+                $("#annotation_file").val(null);
+                $("#annotation_text").val('');
+
+            };
+            reader.readAsBinaryString(file);
+        }
+
     }
 
     function sendChat(chat_text, success, fail) {
@@ -342,15 +376,14 @@ function BigBoard(args) {
         };
 
         $.ajax({
-            url : 'v4/chat/',
+            url : '../api/v4/chat/?username=' + user_name + "&api_key=" + api_key,
             success : success,
             contentType: 'application/json',
             error : fail,
             type: "POST",
             data: JSON.stringify(data),
             dataType: 'json',
-            processData: false,
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+            processData: false
         });
     }
 
@@ -360,7 +393,7 @@ function BigBoard(args) {
             contentType: 'application/json',
             dataType: 'json',
             processData: false,
-            url : 'v4/shared_overlay/',
+            url : '../api/v4/shared_overlay/' + "?username=" + user_name + "&api_key=" + api_key,
             data : JSON.stringify({
                 room: room.resource_uri,
                 user: my_user,
@@ -374,15 +407,23 @@ function BigBoard(args) {
 
     function unshareLayer(overlay) {
         $.ajax({
-            type : 'DELETE',
-            url : 'v4/shared_overlay/',
-            data : { overlay : overlay.id, room : room.id }
+            async: false,
+            url : '../api/v4/shared_overlay/',
+            data : {
+                username : user_name,
+                api_key : api_key,
+                overlay__id : overlay.id
+            },
+            success: function(data) {
+                iter(data.objects, function(o) {
+                    $.ajax({ type: 'DELETE', url: o.resource_uri + "?username=" + user_name + "&api_key=" + api_key });
+                })
+            }
         });
     }
 
-
+    var once = true;
     function mainLoop() {
-        var once = true;
         if(my_userid) {
             if(room) {
                 heartBeat();
@@ -416,11 +457,9 @@ function BigBoard(args) {
             if(debug) console.log('watching location');
         }
 
-        if(debug) console.log('starting main loop')
-
+        if(debug) console.log('starting main loop');
         refreshRoom();
-
-        main_loop = setInterval(mainLoop, 2000);
+        main_loop = setInterval(mainLoop, 3000);
     }
 
     function end() {

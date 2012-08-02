@@ -123,8 +123,12 @@ function Overlay(m, server_object) {
     var share_button;
     var overlay_button;
     var overlay_elements;
+    var overlay_opacity;
+    var overlay_up;
+    var overlay_down;
     var active = false;
     var sharing = false;
+    var hold = false;
 
     evaluable_options = "options=" + server_object.default_creation_options + ";";
     switch(server_object.kind) {
@@ -165,11 +169,12 @@ function Overlay(m, server_object) {
 
     function share() {
         if(!active) {
-            activate();
+            // activate();
         }
         if(!sharing) {
             markShared();
             bb.shareLayer(server_object);
+            activate();
         }
     }
 
@@ -220,20 +225,57 @@ function Overlay(m, server_object) {
             update_interval = setInterval(update(), options.update_interval);
     }
 
+    function changeOpacity() {
+        var value = overlay_opacity.val();
+        layer.setOpacity(value / 100.0);
+        return false;
+    }
+
+    function raise() {
+        layer.map.raiseLayer(layer, 1);
+
+        if(elt && elt.size() > 0) {
+            var elt = overlay_elements.prev();
+            overlay_elements.detach();
+            overlay_elements.insertBefore(elt);
+        }
+    }
+
+    function lower() {
+
+        var elt = overlay_elements.next();
+        if(elt && elt.size() > 0) {
+            layer.map.raiseLayer(layer, -1);
+            overlay_elements.detach();
+            overlay_elements.insertAfter(elt);
+        }
+    }
+
     // start animation if there is any.
     unpause();
 
     // add this overlay to the list of overlays
     overlay_elements = $("#overlay_base").clone();
     overlay_elements.show();
+    overlay_elements.data('overlay_id', server_object.id);
     overlay_elements.attr('id',null);
     overlay_button = $(".overlay_name", overlay_elements);
     share_button = $(".overlay_share", overlay_elements);
+    overlay_opacity = $(".overlay_opacity", overlay_elements);
+    overlay_up = $(".overlay_up", overlay_elements);
+    overlay_down = $(".overlay_down", overlay_elements);
     $('.ui-btn-text', overlay_button.parent()).html(server_object.name);
     overlay_elements.toggle('refresh');
     overlay_button.click(toggle);
     share_button.click(toggleSharing);
-    $("#overlays").append(overlay_elements);
+    overlay_up.click(raise);
+    overlay_down.click(lower);
+
+    overlay_opacity.change(changeOpacity);
+    $("#overlays").prepend(overlay_elements);
+
+    overlay_opacity.slider({mini:true, highlight:true});
+
     m.addLayers([layer]);
     deactivate();
 

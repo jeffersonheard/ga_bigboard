@@ -165,7 +165,7 @@ function merge(base, dest) {
 
 function mergeLeft(base, dest) {
     var ret = $.extend({}, dest);
-    return $.extend(ret, base);
+    return $.extend(base, ret);
 }
 
 /**
