@@ -1,0 +1,42 @@
+{% extends 'ga_bigboard/base.template.html' %}
+
+{%  block scripts %}
+<script type="text/javascript">
+</script>
+{% endblock %}
+
+{% block content %}
+
+<div data-role='page' id="list">
+    <div data-role='header'>
+        <h1>Room List</h1>
+        <a href="#create_room">Create room</a>
+    </div>
+    <div data-role='content'>
+        <form action="{% url bigboard-room %}" data-ajax='false'>
+            <label for="room">Room List</label>
+            <select name="room" id="room">
+                {% for room in rooms %}
+                    <option value="{{ room.name }}">{{ room.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Join room">
+        </form>
+    </div>
+</div>
+
+    <div data-role='page' id="create_room">
+        <div data-role='header'>
+            <h1>Create new room</h1>
+            <a href="#list" data-rel='back'>Room List</a>
+        </div>
+        <div data-role='content'>
+            <form action="{% url bigboard-create-room %}" data-ajax='false' method='POST'>
+                {% csrf_token %}
+                {{ form }}
+                <input type="submit" value="Create room">
+            </form>
+        </div>
+    </div>
+
+{% endblock %}
