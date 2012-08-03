@@ -2,8 +2,9 @@ from django.contrib.gis.geos.geometry import GEOSGeometry
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields as f
 from tastypie.api import Api
-from tastypie.authentication import BasicAuthentication
+from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
+from ga_ows.tastyhacks import Base64FileField
 from ga_bigboard import models
 from django.contrib.auth.models import User
 from ga_ows.tastyhacks import GeoResource
@@ -40,7 +41,7 @@ class MultipartResource(object):
             return request.POST
 
         if format.startswith('multipart'):
-            data = request.POST.copy()
+            data = request.POST
             data.update(request.FILES)
 
             return data
@@ -49,7 +50,7 @@ class MultipartResource(object):
 
 class UserResource(ModelResource):
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
 
         queryset = User.objects.all()
         allowed_methods = ('get',)
@@ -66,7 +67,7 @@ class RoleResource(ModelResource):
     users = f.ManyToManyField(UserResource, 'users')
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
 
         queryset = models.Role.objects.all()
@@ -82,14 +83,15 @@ class OverlayResource(ModelResource):
     roles = f.ManyToManyField(RoleResource, 'roles')
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = ReadOnlyMyRoleAuthorization()
         queryset = models.Overlay.objects.all()
         resource_name = 'overlay'
         allowed_methods = ('get','post','put','delete')
         filtering = {
             'name' : ALL,
-            'roles' : ALL_WITH_RELATIONS
+            'roles' : ALL_WITH_RELATIONS,
+            'id' : ALL
         }
 
 
@@ -99,7 +101,7 @@ class RoomResource(GeoResource):
     roles = f.ManyToManyField(RoleResource, 'roles')
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         queryset = models.Room.objects.all()
         resource_name = 'room'
@@ -115,12 +117,16 @@ class RoomResource(GeoResource):
 
 
 
-class AnnotationResource(MultipartResource, GeoResource):
+class AnnotationResource(GeoResource):
     room = f.ForeignKey(RoomResource, 'room')
     user = f.ForeignKey(UserResource, 'user')
+    image = Base64FileField("image", null=True)
+    video = Base64FileField("video", null=True)
+    audio = Base64FileField("audio", null=True)
+    media = Base64FileField("media", null=True)
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         queryset = models.Annotation.objects.all()
         resource_name = 'annotation'
@@ -132,7 +138,7 @@ class AnnotationResource(MultipartResource, GeoResource):
         }
 
     def obj_create(self, bundle, request=None, **kwargs):
-        bundle.data['geometry'] = GEOSGeometry(bundle.data['geometry'])
+        #bundle.data['geometry'] = GEOSGeometry(bundle.data['geometry'])
         return super(AnnotationResource, self).obj_create(bundle, request, user=request.user)
 
 
@@ -143,7 +149,7 @@ class SharedOverlayResource(ModelResource):
     shared_with_roles = f.ManyToManyField(RoleResource, 'shared_with_roles')
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         queryset = models.SharedOverlay.objects.all()
         resource_name = 'shared_overlay'
@@ -162,7 +168,7 @@ class ParticipantResource(GeoResource):
     roles = f.ManyToManyField(to=RoleResource, attribute='roles', full=True)
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         queryset = models.Participant.objects.all()
         resource_name = 'participant'
@@ -181,7 +187,7 @@ class ChatResource(GeoResource):
     at = f.ManyToManyField(to=UserResource, attribute='at')
 
     class Meta:
-        authentication = BasicAuthentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         queryset = models.Chat.objects.all()
         resource_name = 'chat'
