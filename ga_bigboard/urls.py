@@ -26,5 +26,5 @@ urlpatterns = patterns('',
 )
 
 # url(r'^', include(api_v4.urls, namespace='ga_bigboard')),
-# reverse('ga_bigboard:api_dispatch_list', kwargs={'resource_name':'chat','api_name':'v4'})
-# {% url ga_bigboard:api_dispatch_list resource_name='chat' api_name='v4'  %}
+# reverse('api_dispatch_list', kwargs={'resource_name':'chat','api_name':'v4'})
+# {% url api_dispatch_list resource_name='chat' api_name='v4'  %}
