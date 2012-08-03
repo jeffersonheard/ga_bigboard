@@ -19,18 +19,32 @@ function BigBoard(args) {
     var received_shared_overlays = false;
 
 
-    // TODO - all this stuff can be simplified now that room, username, and api_key are part of the global variable stack.
-    var my_username = user_name;
-    var my_password = api_key;
+    var my_username = args.user_name; // DEPRECATED
+    var my_password = args.api_key; // DEPRECATED
     var my_userid = either(args, 'user_id', null);
     var my_user = either(args, 'user', null);
     var debug = either(args, 'debug', false);
     var main_loop;
     var hash;
+    var api_key = args.api_key;
+    var user_name = args.user_name;
+    var room_name = args.room_name;
+
+    var bb_api_center = either(args, 'bb_api_center', '../center/');
+    var bb_api_room = either(args, 'bb_api_room', '../api/v4/room/');
+    var bb_api_annotations = either(args, 'bb_api_annotations', '../api/v4/annotation/');
+    var bb_api_chats = either(args, 'bb_api_chats', '../api/v4/chat/');
+    var bb_api_overlays = either(args, 'bb_api_overlays', '../api/v4/overlay/');
+    var bb_api_sharedoverlays = either(args, 'bb_api_sharedoverlays', '../api/v4/shared_overlay/');
+    var bb_api_participants = either(args, 'bb_api_participants', '../api/v4/participant/');
+    var bb_api_roles = either(args, 'bb_api_roles', '../api/v4/role');
+    var bb_api_join = either(args, 'bb_api_joins', '../join/');
+    var bb_api_leave = either(args, 'bb_api_leave', '../leave/');
+    var bb_api_heartbeat = either(args, 'bb_api_heartbeat', '../heartbeat/');
 
     var location = [0,0];
 
-    console.log('creating bigboard object');
+    if(debug) console.log('creating bigboard object');
 
     function errorHandler(func) {
         return function(data, textStatus, thrownError) {
@@ -52,7 +66,6 @@ function BigBoard(args) {
 
     function receivedChats(data, textStatus, jqXHR) {
         if(data.objects) {
-            //chats = sift(chats, data.objects, function(i) { i.when = new Date(i.when); return i.when; }); // should merge in the list with the "when" attribute used as key.
             chats = data.objects;
             if(debug) console.log("latest version of chats received");
             either(args, 'receivedChats', noop)(chats, textStatus, jqXHR);
@@ -114,7 +127,7 @@ function BigBoard(args) {
     function refreshAnnotations() {
         received_annotations = false;
         $.ajax({
-            url : '../api/v4/annotation/',
+            url : bb_api_annotations,
             data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedAnnotations,
@@ -126,7 +139,7 @@ function BigBoard(args) {
         received_chats = false;
         var when = last_chat_update;
         $.ajax({
-            url : '../api/v4/chat/',
+            url : bb_api_chats,
             data : { room : room.id, limit : 0, id__gt : when, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedChats,
@@ -136,11 +149,19 @@ function BigBoard(args) {
 
     function refreshOverlays() {
         received_overlays = false;
-        var url = '../api/v4/overlay/?';
+        var url = bb_api_overlays;
+        var data = {
+            room__name : room_name,
+            limit : 0,
+            format : 'json',
+            username : user_name,
+            api_key : api_key,
+            roles__id__in : []
+        };
+
         iter(roles, function(r) {
-            url += "roles__id__in=" + r.id + "&"
+            data.roles__id__in.push(r.id);
         });
-        url = url.substring(0, url.length-1);
 
         $.ajax({
             url : url,
@@ -160,7 +181,7 @@ function BigBoard(args) {
     function refreshParticipants() {
         received_participants = false;
         $.ajax({
-            url : '../api/v4/participant/',
+            url : bb_api_participants,
             data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedParticipants,
@@ -171,7 +192,7 @@ function BigBoard(args) {
     function refreshRoles() {
         received_roles = false;
         $.ajax({
-            url : '../api/v4/role/',
+            url : bb_api_roles,
             data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoles,
@@ -183,7 +204,7 @@ function BigBoard(args) {
     function refreshRoom() {
         received_room = false;
         $.ajax({
-            url : '../api/v4/room/',
+            url : bb_api_room,
             data : { name : room_name, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoom,
@@ -195,7 +216,7 @@ function BigBoard(args) {
     function refreshSharedOverlays() {
         received_shared_overlays = false;
         $.ajax({
-            url : '../api/v4/shared_overlay/',
+            url : bb_api_sharedoverlays,
             data : { name : room_name, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedSharedOverlays,
@@ -211,7 +232,7 @@ function BigBoard(args) {
 
         $.ajax({
             async : false,
-            url : '../api/v4/role/',
+            url : bb_api_roles,
             data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedRoles,
@@ -222,10 +243,9 @@ function BigBoard(args) {
         either(args, 'loginSuccessful', noop)(data, textStatus, jqXHR);
     }
 
-    function join(room) {
+    function join() {
         if(!room_name || !user_name || !api_key) {
             console.log("Please define the global variables room, username, and api_key in a script tag above bigboard_mainloop.js. (room, username, and api_key are listed subsequently)");
-            console.log(room);
             console.log(user_name);
             console.log(api_key);
         }
@@ -237,7 +257,7 @@ function BigBoard(args) {
         hash = "Basic " + tok;
 
         $.ajax({
-            url : '../join/',
+            url : bb_api_join,
             data : { room : room_name },
             accepts : 'application/json',
             success : receivedLoginCredentials,
@@ -255,7 +275,7 @@ function BigBoard(args) {
     function leave() {
         $.ajax({
             async: false, // in case an implementor wants to go somewhere after leaving, this ensures that the function completes before the browser leaves.
-            url : '../leave/',
+            url : bb_api_leave,
             accepts : 'application/json',
             success : resignedLoginCredentials,
             error : errorHandler(either(args, 'failedLogout', noop))
@@ -266,7 +286,7 @@ function BigBoard(args) {
 
     function heartBeat() {
         $.ajax({
-            url : '../heartbeat/',
+            url : bb_api_heartbeat,
             data : { x : location[0], y : location[1] },
             accepts : 'application/json',
             success : function() { if(debug) { console.log("heartbeat"); }},
@@ -274,8 +294,15 @@ function BigBoard(args) {
         })
     }
 
-    function persistAnnotation(feature) {
-        var kind = $("#annotation_kind").val();
+    function deleteAnnotation(ann) {
+        $.ajax({
+            url: ann.attributes.resource_uri + "?username=" + user_name + "&api_key=" + api_key,
+            type: 'DELETE',
+            error : errorHandler(either(args, 'failedDeleteAnnotation', noop))
+        });
+    }
+
+    function persistAnnotation(kind, value, feature) {
         var data = {};
         var wkt = JSON.parse(new OpenLayers.Format.GeoJSON().write(feature));
         var file, encoded;
@@ -304,17 +331,17 @@ function BigBoard(args) {
             case 'video':
             case 'image':
             case 'media':
-                file = $("#annotation_file")[0].files[0];
                 wait = true;
+                file = value;
                 break;
             default:
-                data[kind] = $("#annotation_text").val();
+                data[kind] = value;
                 break;
         }
 
         if(!wait) {
             $.ajax({
-                url : '../api/v4/annotation/?username=' + user_name + "&api_key=" + api_key,
+                url : bb_api_annotations + '?username=' + user_name + "&api_key=" + api_key,
                 type : 'POST',
                 data: JSON.stringify(data),
                 cache: false,
@@ -330,10 +357,10 @@ function BigBoard(args) {
         else {
             reader.onload = function(event) {
                 encoded = btoa(event.target.result);
-                data[kind] = { name : $("#annotation_file")[0].files[0].name, file : encoded };
+                data[kind] = { name : file.name, file : encoded };
 
                 $.ajax({
-                    url : '../api/v4/annotation/?username=' + user_name + "&api_key=" + api_key,
+                    url : bb_api_annotations + '?username=' + user_name + "&api_key=" + api_key,
                     type : 'POST',
                     data: JSON.stringify(data),
                     cache: false,
@@ -342,8 +369,6 @@ function BigBoard(args) {
                     error: errorHandler(noop),
                     success: function(data) { console.log('success'); console.log(data); }
                 });
-                $("#annotation_file").val(null);
-                $("#annotation_text").val('');
 
             };
             reader.readAsBinaryString(file);
@@ -376,7 +401,7 @@ function BigBoard(args) {
         };
 
         $.ajax({
-            url : '../api/v4/chat/?username=' + user_name + "&api_key=" + api_key,
+            url : bb_api_chats + '?username=' + user_name + "&api_key=" + api_key,
             success : success,
             contentType: 'application/json',
             error : fail,
@@ -393,7 +418,7 @@ function BigBoard(args) {
             contentType: 'application/json',
             dataType: 'json',
             processData: false,
-            url : '../api/v4/shared_overlay/' + "?username=" + user_name + "&api_key=" + api_key,
+            url : bb_api_sharedoverlays + "?username=" + user_name + "&api_key=" + api_key,
             data : JSON.stringify({
                 room: room.resource_uri,
                 user: my_user,
@@ -408,7 +433,7 @@ function BigBoard(args) {
     function unshareLayer(overlay) {
         $.ajax({
             async: false,
-            url : '../api/v4/shared_overlay/',
+            url : bb_api_sharedoverlays,
             data : {
                 username : user_name,
                 api_key : api_key,
@@ -420,6 +445,14 @@ function BigBoard(args) {
                 })
             }
         });
+    }
+
+    function setRoomCenter(lon, lat, zoom) {
+        $.get(bb_api_center, {
+            x:lon,
+            y:lat,
+            z:zoom
+        }, errorHandler(noop));
     }
 
     var once = true;
@@ -469,8 +502,8 @@ function BigBoard(args) {
     return {
         room : room_name,
         user_id : my_userid,
-        username : my_username,
-        password : my_password,
+        username : my_username, // DEPRECATED
+        password : my_password, // DEPRECATED
         location : location,
 
         start : start,
@@ -480,7 +513,9 @@ function BigBoard(args) {
         sendChat: sendChat,
         shareLayer: shareLayer,
         unshareLayer: unshareLayer,
-        persistAnnotation: persistAnnotation
+        persistAnnotation: persistAnnotation,
+        deleteAnnotation: deleteAnnotation,
+        setRoomCenter: setRoomCenter
     };
 
 }

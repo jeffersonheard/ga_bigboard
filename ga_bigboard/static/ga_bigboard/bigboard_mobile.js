@@ -37,10 +37,10 @@ $(document).ready(function() {
         initted = true;
 
         bb = BigBoard({
-            room_name : $("#room_name").val(),
-            username : $("#username").val(),
-            password : $("#password").val(),
+            room_name : room_name,
             user_id : $("#user_id").val(),
+            user_name : user_name,
+            api_key : api_key,
             debug : true,
 
             loginSuccessful : function(data) {
@@ -379,9 +379,19 @@ $(document).ready(function() {
 
     init();
 
-    controls.point_control.featureAdded = function(annotation) { bb.persistAnnotation(annotation); };
-    controls.path_control.featureAdded = function(annotation) { bb.persistAnnotation(annotation); };
-    controls.polygon_control.featureAdded = function(annotation) { bb.persistAnnotation(annotation); };
+    function addAnnotation(annotation) {
+        var kind = $("#annotation_kind").val();
+        var file = $("#annotation_file")[0].files[0];
+        var text = $("#annotation_text").val();
+        bb.persistAnnotation(kind, kind==='text'||kind==='link' ? text : file, annotation);
+
+        $("#annotation_file").val(null);
+        $("#annotation_text").val('');
+    }
+
+    controls.point_control.featureAdded = addAnnotation;
+    controls.path_control.featureAdded = addAnnotation;
+    controls.polygon_control.featureAdded = addAnnotation;
     controls.select_control.onSelect = function(annotation) {
         iter(annotations, function(ann) {
             ann.selected = ann.selected || ann.attributes.resource_uri === annotation.attributes.resource_uri;
@@ -407,22 +417,14 @@ $(document).ready(function() {
     $("#center_all_here").submit(function() {
         var c = map.getCenter();
         c.transform(sm, gm);
-
-        $.get('../center/', {
-            x:c.lon,
-            y:c.lat,
-            z:map.getZoom()
-        });
+        bb.setRoomCenter(c.lon, c.lat, map.getZoom())
         return false;
     });
 
     $("#delete_control").click(function() {
         iter(annotations, function(ann) {
            if(ann.selected) {
-               $.ajax({
-                   url: ann.attributes.resource_uri + "?username=" + user_name + "&api_key=" + api_key,
-                   type: 'DELETE'
-               });
+               bb.deleteAnnotation(ann);
                annotationLayer.destroyFeatures(ann);
            }
         });
@@ -432,10 +434,11 @@ $(document).ready(function() {
         var first=false;
 
         iter(filter(annotations, function(ann) { return ann.selected; }), function(ann) {
-            var info = $('<div data-role="collapsible"></div>');
+            var info = $('<div></div>');
             info.append("<h3>Selected Feature</h3>"); // TODO when this is clicked, highlight the feature on the map if there are multiple selected
             var info_container = $("<ul data-role='listview'></ul>");
             info.append(info_container);
+            $("#feature_info>*").detach();
             $("#feature_info").append(info);
 
             enumerate(ann.attributes, function(k, v) {
@@ -470,10 +473,6 @@ $(document).ready(function() {
 
             $("#feature_info").trigger('refresh');
         });
-    });
-
-    $(".overlay_share").click(function() {
-
     });
 
     $("a.menuitem").click(menuSwitcher);

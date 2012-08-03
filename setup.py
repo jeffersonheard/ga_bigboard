@@ -38,7 +38,7 @@ for package in packages:
     packagepath = package.replace('.','/')   
     cwd = os.getcwd()
     os.chdir(packagepath)
-    non_pyfiles = [line.strip() for line in os.popen('find -type f | egrep -v "py.*$"').readlines()]
+    non_pyfiles = [line.strip() for line in os.popen('find . -type f | egrep -v "py.*$"').readlines()]
     os.chdir(cwd)
     package_data[package] = non_pyfiles
 

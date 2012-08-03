@@ -17,6 +17,8 @@ class Role(m.Model):
 
     self_assignable = m.BooleanField(default=False)
 
+    objects = m.GeoManager()
+
     def __unicode__(self):
         return self.verbose_name if self.verbose_name else self.name
 
@@ -42,6 +44,8 @@ class Overlay(m.Model):
     #: Who is this overlay visible to?
     roles = m.ManyToManyField(Role) # names
 
+    objects = m.GeoManager()
+
     def __unicode__(self):
         return self.name
 
@@ -54,6 +58,8 @@ class CustomControl(m.Model):
 
     #: the roles that the custom control is visible by
     roles = m.ManyToManyField(Role)
+
+    objects = m.GeoManager()
 
     def __unicode__(self):
         return self.name
@@ -88,6 +94,8 @@ class Room(m.Model):
     #: The zoom level of this room when the user first logs in
     zoom_level = m.IntegerField(default=5, null=False)
 
+    objects = m.GeoManager()
+
     def __unicode__(self):
         return self.name
 
@@ -111,6 +119,8 @@ class SharedOverlay(m.Model):
     #: which room is it attached to
     room = m.ForeignKey(Room, db_index=True)
 
+    objects = m.GeoManager()
+
     def __unicode__(self):
         return self.overlay.name
 
@@ -132,6 +142,8 @@ class Participant(m.Model):
     last_heartbeat = m.DateTimeField(auto_now_add=True)
 
     room = m.ForeignKey(Room, db_index=True)
+
+    objects = m.GeoManager()
 
     def __unicode__(self):
         return self.user.username + ' in ' + self.room.name
@@ -176,6 +188,8 @@ class Annotation(m.Model):
     #: when the annotation was added to the room
     when = m.DateTimeField(auto_now=True)
 
+    objects = m.GeoManager()
+
     def __unicode__(self):
         return self.room.name + '@' + self.when.strftime('%Y-%M-%d %h:%m')
 
@@ -205,6 +219,8 @@ class Chat(m.Model):
 
     def __unicode__(self):
         return self.room.name + '.' + self.user.username + '@' + self.when.strftime('%Y-%M-%d %h:%m')
+
+    objects = m.GeoManager()
 
     class Meta:
         ordering = ['when']
