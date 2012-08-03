@@ -114,13 +114,8 @@ function BigBoard(args) {
     function refreshAnnotations() {
         received_annotations = false;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_ANNOTATION,
-            data : { room : room.id, limit : 0, format : 'json' },
-=======
             url : '../api/v4/annotation/',
             data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedAnnotations,
             error : errorHandler(either(args, 'refreshAnnotationsError', noop))
@@ -131,13 +126,8 @@ function BigBoard(args) {
         received_chats = false;
         var when = last_chat_update;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_CHAT,
-            data : { room : room.id, limit : 0, id__gt : when, format : 'json' },
-=======
             url : '../api/v4/chat/',
             data : { room : room.id, limit : 0, id__gt : when, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedChats,
             error : errorHandler(either(args, 'refreshChatError', noop))
@@ -146,11 +136,7 @@ function BigBoard(args) {
 
     function refreshOverlays() {
         received_overlays = false;
-<<<<<<< HEAD
-        var url = URL_BB_RESOURCE_OVERLAY+'?';
-=======
         var url = '../api/v4/overlay/?';
->>>>>>> upstream/master
         iter(roles, function(r) {
             url += "roles__id__in=" + r.id + "&"
         });
@@ -174,13 +160,8 @@ function BigBoard(args) {
     function refreshParticipants() {
         received_participants = false;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_PARTICIPANT,
-            data : { room : room.id, limit : 0, format : 'json' },
-=======
             url : '../api/v4/participant/',
             data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedParticipants,
             error : errorHandler(either(args, 'refreshParticipantsError', noop))
@@ -190,13 +171,8 @@ function BigBoard(args) {
     function refreshRoles() {
         received_roles = false;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_ROLE,
-            data : { users__id : my_userid, limit : 0, format : 'json' },
-=======
             url : '../api/v4/role/',
             data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedRoles,
             error : errorHandler(either(args, 'refreshRolesError', noop))
@@ -207,13 +183,8 @@ function BigBoard(args) {
     function refreshRoom() {
         received_room = false;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_ROOM,
-            data : { name : room_name, format : 'json' },
-=======
             url : '../api/v4/room/',
             data : { name : room_name, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedRoom,
             error : errorHandler(either(args, 'failedRoomGet', noop)),
@@ -224,13 +195,8 @@ function BigBoard(args) {
     function refreshSharedOverlays() {
         received_shared_overlays = false;
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_SHARED_OVERLAY,
-            data : { name : room_name, limit : 0, format : 'json' },
-=======
             url : '../api/v4/shared_overlay/',
             data : { name : room_name, limit : 0, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedSharedOverlays,
             error : errorHandler(either(args, 'refreshSharedOverlaysError', noop)),
@@ -240,22 +206,13 @@ function BigBoard(args) {
 
     function receivedLoginCredentials(data, textStatus, jqXHR) {
         my_userid = data.user_id;
-<<<<<<< HEAD
-        my_user = URL_BB_RESOURCE_USER + data.user_id + '/'; // "/ga_bigboard/v4/user/1/"
-=======
         my_user = data.owner;
->>>>>>> upstream/master
         room = data.room;
 
         $.ajax({
             async : false,
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_ROLE,
-            data : { users__id : my_userid, limit : 0, format : 'json' },
-=======
             url : '../api/v4/role/',
             data : { users__id : my_userid, limit : 0, format : 'json', username : user_name, api_key : api_key },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedRoles,
             error : errorHandler(either(args, 'refreshRolesError', noop))
@@ -280,13 +237,8 @@ function BigBoard(args) {
         hash = "Basic " + tok;
 
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_JOIN,
-            data : { username: my_username, password: my_password, room : room_name },
-=======
             url : '../join/',
             data : { room : room_name },
->>>>>>> upstream/master
             accepts : 'application/json',
             success : receivedLoginCredentials,
             error : errorHandler(either(args, 'failedLogin', noop))
@@ -302,12 +254,8 @@ function BigBoard(args) {
 
     function leave() {
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_LEAVE,
-=======
             async: false, // in case an implementor wants to go somewhere after leaving, this ensures that the function completes before the browser leaves.
             url : '../leave/',
->>>>>>> upstream/master
             accepts : 'application/json',
             success : resignedLoginCredentials,
             error : errorHandler(either(args, 'failedLogout', noop))
@@ -318,11 +266,7 @@ function BigBoard(args) {
 
     function heartBeat() {
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_HEARTBEAT,
-=======
             url : '../heartbeat/',
->>>>>>> upstream/master
             data : { x : location[0], y : location[1] },
             accepts : 'application/json',
             success : function() { if(debug) { console.log("heartbeat"); }},
@@ -368,18 +312,6 @@ function BigBoard(args) {
                 break;
         }
 
-<<<<<<< HEAD
-        $.ajax({
-            url : URL_BB_RESOURCE_ANNOTATION,
-            type : 'POST',
-            data: data,
-            cache: false,
-            contentType: false,
-            processData: false,
-            success: function(data) { console.log('success'); console.log(data); },
-            beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
-        });
-=======
         if(!wait) {
             $.ajax({
                 url : '../api/v4/annotation/?username=' + user_name + "&api_key=" + api_key,
@@ -416,8 +348,7 @@ function BigBoard(args) {
             };
             reader.readAsBinaryString(file);
         }
->>>>>>> upstream/master
-
+        
     }
 
     function sendChat(chat_text, success, fail) {
@@ -445,11 +376,7 @@ function BigBoard(args) {
         };
 
         $.ajax({
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_CHAT,
-=======
             url : '../api/v4/chat/?username=' + user_name + "&api_key=" + api_key,
->>>>>>> upstream/master
             success : success,
             contentType: 'application/json',
             error : fail,
@@ -466,11 +393,7 @@ function BigBoard(args) {
             contentType: 'application/json',
             dataType: 'json',
             processData: false,
-<<<<<<< HEAD
-            url : URL_BB_RESOURCE_SHARED_OVERLAY,
-=======
             url : '../api/v4/shared_overlay/' + "?username=" + user_name + "&api_key=" + api_key,
->>>>>>> upstream/master
             data : JSON.stringify({
                 room: room.resource_uri,
                 user: my_user,
@@ -484,11 +407,6 @@ function BigBoard(args) {
 
     function unshareLayer(overlay) {
         $.ajax({
-<<<<<<< HEAD
-            type : 'DELETE',
-            url : URL_BB_RESOURCE_SHARED_OVERLAY,
-            data : { overlay : overlay.id, room : room.id }
-=======
             async: false,
             url : '../api/v4/shared_overlay/',
             data : {
@@ -501,7 +419,6 @@ function BigBoard(args) {
                     $.ajax({ type: 'DELETE', url: o.resource_uri + "?username=" + user_name + "&api_key=" + api_key });
                 })
             }
->>>>>>> upstream/master
         });
     }
 

@@ -5,15 +5,6 @@ from ga_bigboard import views
 from django.contrib.auth.views import login
 
 urlpatterns = patterns('',
-<<<<<<< HEAD
-    url(r'^', include(api_v4.urls)),
-    url(r'^room', views.RoomView.as_view(), name='ga_bigboard_room'),
-    url(r'^join', views.JoinView.as_view(), name='ga_bigboard_join'),
-    url(r'^leave', views.LeaveView.as_view(), name='ga_bigboard_leave'),
-    url(r'^heartbeat', views.HeartbeatView.as_view(), name='ga_bigboard_heartbeat'),
-    url(r'^center', views.RecenterView.as_view(), name='ga_bigboard_center'),
-    url(r'^admin',views.TastypieAdminView.as_view(), name='ga_bigboard_admin'),
-=======
     url(r'^api/', include(api_v4.urls)),
     url(r'^login/', login, kwargs={'template_name' : 'ga_bigboard/login.template.html'}, name='bigboard-login'),
     url(r'^room/', views.RoomView.as_view(), name='bigboard-room'),
@@ -24,7 +15,6 @@ urlpatterns = patterns('',
     url(r'^heartbeat/', views.HeartbeatView.as_view(), name='bigboard-heartbeat'),
     url(r'^center/', views.RecenterView.as_view(), name='bigboard-center'),
     #url(r'^admin',views.TastypieAdminView.as_view(), name='ga_bigboard_admin'),
->>>>>>> upstream/master
 
     # Examples:
     # url(r'^$', 'ga.views.home', name='home'),
