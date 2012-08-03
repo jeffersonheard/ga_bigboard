@@ -6,8 +6,8 @@ var initted = false;
 $(document).ready(function() {
     var gm = new OpenLayers.Projection("EPSG:4326");
     var sm = new OpenLayers.Projection("EPSG:3857");
-    var annotationLayer = new OpenLayers.Layer.Vector("Annotations", { renderers: ['Canvas','SVG','VML'], projection: sm, alwaysInRange: true });
-    var participantsLayer = new OpenLayers.Layer.Vector("Participants", { renderers: ['Canvas','SVG','VML'], projection: sm, alwaysInRange: true });
+    var annotationLayer = new OpenLayers.Layer.Vector("Annotations");
+    var participantsLayer = new OpenLayers.Layer.Vector("Participants");
 
     controls = {
         // DEBUG ONLY: layer_control : new OpenLayers.Control.LayerSwitcher(),
