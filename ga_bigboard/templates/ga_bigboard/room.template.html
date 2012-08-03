@@ -22,8 +22,10 @@
 
     <script type='text/javascript'>
         var room_name = "{{ room }}";
-        var user_name = "{{ username }}"
+        var user_name = "{{ username }}";
         var api_key = "{{ api_key.key }}";
+
+        var BB
     </script>
 
     <script src="http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false"></script>
@@ -266,7 +268,6 @@
             </ul>
 
             <ul data-role="listview" id="overlays" class='navigator'>
-                <li id="overlays_header" data-role='list-divider'>Overlays</li>
                 <li id="overlay_base" class='overlay'>
                     <form action="">
                         <span>
