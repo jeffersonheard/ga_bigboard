@@ -3,6 +3,8 @@ from django.contrib.gis.geos import Point
 from django.contrib.auth.models import User
 
 class Role(m.Model):
+    objects = m.GeoManager()
+    
     #: the role name
     name = m.CharField(max_length=255, unique=True, blank=False, db_index=True)
 
@@ -24,6 +26,7 @@ class Role(m.Model):
 
 class Overlay(m.Model):
     """An OpenLayers overlay."""
+    objects = m.GeoManager()
 
     #: should be a valid OpenLayers.Layer.* type in OpenLayers
     kind = m.CharField(max_length=64, blank=False, choices=(
@@ -50,6 +53,8 @@ class Overlay(m.Model):
         return self.name
 
 class CustomControl(m.Model):
+    objects = m.GeoManager()
+    
     #: the url of the custom control
     url = m.URLField(blank=False)
 
@@ -66,6 +71,7 @@ class CustomControl(m.Model):
 
 class Room(m.Model):
     """A conference room"""
+    objects = m.GeoManager()
 
     #: The room name
     name = m.CharField(max_length=255, blank=False, db_index=True, unique=True)
@@ -101,6 +107,7 @@ class Room(m.Model):
 
 class SharedOverlay(m.Model):
     """An overlay that is shared"""
+    objects = m.GeoManager()
 
     overlay = m.ForeignKey(Overlay)
 
@@ -128,6 +135,7 @@ class SharedOverlay(m.Model):
 class Participant(m.Model):
     """A room participant
     """
+    objects = m.GeoManager()
 
     #: the user id
     user = m.ForeignKey(User)
@@ -151,6 +159,7 @@ class Participant(m.Model):
 
 class Annotation(m.Model):
     """The annotations.  Filter by room and associated overlay to get the actual layer you want.  There should be a GeoJSON API for this"""
+    objects = m.GeoManager()
 
     #: must be a valid room _id for a Room object.
     room = m.ForeignKey(Room, db_index=True)
@@ -196,6 +205,7 @@ class Annotation(m.Model):
 
 class Chat(m.Model):
     """A chat message"""
+    objects = m.GeoManager()
 
     room = m.ForeignKey(Room, db_index=True)
 

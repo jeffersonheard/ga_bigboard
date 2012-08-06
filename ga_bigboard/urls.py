@@ -26,3 +26,7 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
 )
+
+# url(r'^', include(api_v4.urls, namespace='ga_bigboard')),
+# reverse('api_dispatch_list', kwargs={'resource_name':'chat','api_name':'v4'})
+# {% url api_dispatch_list resource_name='chat' api_name='v4'  %}

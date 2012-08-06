@@ -373,7 +373,7 @@ function BigBoard(args) {
             };
             reader.readAsBinaryString(file);
         }
-
+        
     }
 
     function sendChat(chat_text, success, fail) {
