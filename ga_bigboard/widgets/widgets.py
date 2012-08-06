@@ -2,6 +2,6 @@
 # name & file are required
 # height, width, editable, & settings are optional
 WIDGETS = [
-    {'name':'test','file': 'test.js','editable':False,'settings':{}},
+    {'name':'Bigboard Chat','file': 'chat.js','editable':False,'settings':{}},
 ]
 
