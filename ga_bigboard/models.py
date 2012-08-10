@@ -75,7 +75,7 @@ class Room(m.Model):
         ('GoogleTerrain','Google Terrain'),
         ('GoogleHybrid','Google Streets'),
         ('GoogleSatellite','Google Satellite'),
-        ('Open Streetmap','OSM'),
+        ('OSM','Open Streetmap'),
         ('WMS','WMS')
     ))
 
