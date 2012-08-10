@@ -195,16 +195,16 @@ $(document).ready(function() {
                     //
                     switch(data.base_layer_type) {
                         case "GoogleTerrain":
-                                baseLayer = new OpenLayers.Layer.Google("Google Terrain", {type: google.maps.MapTypeId.TERRAIN, numZoomLevels: 20});
+                                baseLayer = new OpenLayers.Layer.Google("Google Terrain", {type: google.maps.MapTypeId.TERRAIN});
                             break;
                         case "GoogleSatellite":
-                                baseLayer = new OpenLayers.Layer.Google("Google Satellite", {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 20});
+                                baseLayer = new OpenLayers.Layer.Google("Google Satellite", {type: google.maps.MapTypeId.SATELLITE});
                             break;
                         case "GoogleHybrid":
-                                baseLayer = new OpenLayers.Layer.Google("Google Streets", {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20});
+                                baseLayer = new OpenLayers.Layer.Google("Google Streets", {type: google.maps.MapTypeId.HYBRID});
                             break;
                         case "OSM":
-                                baseLayer = new OpenLayers.Layer.Google("OpenStreetMap");
+                                baseLayer = new OpenLayers.Layer.OSM("OpenStreetMap");
                             break;
                         case "WMS":
                                 baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
