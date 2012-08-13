@@ -47,260 +47,280 @@ $(document).ready(function() {
                 console.log('starting data streams');
                 bb.start();
             },
-
-            receivedAnnotations: function(data) {
-                var feature;
-                var untouched = keyset(annotations);
-                iter(data, function(ann) {
-                    delete untouched[ann.resource_uri];
-                    if(!annotations.hasOwnProperty(ann.resource_uri)) {
-                        feature = geojson.read(ann.geometry)[0];
-
-                        feature.attributes = $.extend(ann, {});
-                        annotationLayer.addFeatures(feature);
-                        annotations[ann.resource_uri] = feature;
-                    }
-                    else if(annotations[ann.resource_uri].attributes.when != ann.when) {
-                        annotationLayer.destroyFeatures(annotations[ann.resource_uri]);
-                        feature = geojson.read(ann.geometry)[0];
-                        feature.attributes = $.extend(ann, {});
-                        annotationLayer.addFeatures(feature);
-                        annotations[ann.resource_uri] = feature;
-                    }
-                });
-                enumerate(untouched, function(resource_uri) {
-                    annotationLayer.destroyFeatures(annotations[resource_uri]);
-                });
-                annotationLayer.redraw();
-            },
-
-            receivedChats: function(data) {
-                //$("#chat_log>*").detach();
-                iter(data, function(chat) {
-                    // for each non-private or me-directed chat in the log:
-                    if(!chat.private || chat.at.indexOf(user_id) != -1) {
-                    //      scan the text for the names in participants.  If the name exists, update it so that it's got <span class='$participant'></span> around it.
-                    // collect the "ats" from each non-private chat.  for each "at":
-                    //      update the css temporarily to highlight the participant for 5 seconds.
-                    //      append a temporary LineString from chat.user to each chat.at
-                    //      highlight the participant on the participants layer.
-                    //      append the chat text to the log.
-                    // if the chat is not private or is "at" this user:
-                    //      if the chat is private update the css so that it's marked as such in the log.
-                    //      append (when) user: to the
-                        var timestamp = new Date(chat.when);
-                        var chat_record = $("<div class='chat_item'></div>");
-                        chat_record.append("<span class='chat_time'>" + timestamp.toTimeString().substring(0,6) + "</span>");
-                        chat_record.append("<span class='chat_username'>" + participants[chat.user].user.username + "</span>");
-                        chat_record.append("<span class='chat_text'>" + chat.text + "</span>");
-                        $("#chat_log").append(chat_record);
-                    }
-                });
-                if(data.length > 0) {
-                    $("#chat_log").scrollTop($("#chat_log").scrollTop() + $("#chat_log>*").last().position().top);
-                }
-                participantsLayer.redraw();
-            },
-
-            receivedOverlays: function(data) {
-                iter(data, function(obj) {
-                    // append overlays to the overlay tab.  We only support WMS right now.
-                    if(!overlays.hasOwnProperty(obj.resource_uri)) {
-                        overlays[obj.resource_uri] = new Overlay(map, obj);
-                    }
-                });
-                map.setLayerIndex(annotationLayer, 9999);
-                map.setLayerIndex(participantsLayer, 10000);
-
-            },
-
-            receivedParticipants: function(data) {
-                participants = {};
-                $("#participant_list>*").detach();
-
-                iter(data, function(participant) {
-                    participants[participant.user.resource_uri] = participant;
-                    var f = participantsLayer.getFeatureBy('user', participant.user.resource_uri); // for each participant in the room, update their position on the map
-                    if(f) {
-                        var pt = new OpenLayers.Geometry.Point(
-                            participant.where.coordinates[0],
-                            participant.where.coordinates[1]
-                        ).transform(gm, sm);
-
-                        f.geometry.x = pt.x;
-                        f.geometry.y = pt.y;
-                    }
-                    else {
-                        f = new OpenLayers.Feature.Vector(
-                            new OpenLayers.Geometry.Point(
-                                participant.where.coordinates[0],
-                                participant.where.coordinates[1]
-                            ).transform(gm, sm), participant);
-
-                        f.style = {
-                            fill : true,
-                            fillColor : '#ff6666',
-                            strokeColor : '#ff6666',
-                            strokeWidth : 1,
-                            fillOpacity : 0.6,
-                            graphic : true,
-                            graphicName : 'cross',
-                            fontColor : '#000000',
-                            fontWeight : 'bold',
-                            fontFamily : 'Helvetica, Arial, sans-serif',
-                            fontSize : '9pt',
-                            pointRadius : 5,
-                            label : participant.user.username,
-                            labelAlign : 'l',
-                            labelXOffset : 7
-                        };
-                        f.attributes = participant;
-                        f.user = participant.user.resource_uri;
-                        participantsLayer.addFeatures([f]);
-                    }
-
-                    var display_name = participant.user.first_name ? (participant.user.first_name + ' ' + participant.user.last_name)  : participant.user.username;
-                    var heartbeat_time = new Date(participant.last_heartbeat);
-                    var email_link = $("<a class='user_email' data-role='button' data-mini='true' href='mailto:" + participant.user.email + "'>email</a>");
-
-                    var participant_name = $("<li></li>")
-                            .append($("<a class='username' href='#'>" + display_name + "</span>").data('user', participant.user.resource_uri))
-                            .append($("<span class='user_heartbeat'>" + heartbeat_time.toTimeString().substring(0,5) + "</span>"))
-                            .append(email_link);
-
-                    $("#participant_list").append(participant_name);
-                });
-
-                // TODO - click on user name in participant list to center on that user.
-                //$(".username").click(function(k) {
-                //    var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
-                //    map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
-                //});
-
-                participantsLayer.redraw();
-            },
-
-            receivedRoles: function(data) {
-                roles = data;
-            },
-
-            receivedRoom: function(data) {
-                var baseLayer;
-                var newCenter;
-
-                if(!map) {
-
-                    //
-                    // setup the map
-                    //
-                    switch(data.base_layer_type) {
-                        case "GoogleTerrain":
-                                baseLayer = new OpenLayers.Layer.Google("Google Terrain", {type: google.maps.MapTypeId.TERRAIN});
-                            break;
-                        case "GoogleSatellite":
-                                baseLayer = new OpenLayers.Layer.Google("Google Satellite", {type: google.maps.MapTypeId.SATELLITE});
-                            break;
-                        case "GoogleHybrid":
-                                baseLayer = new OpenLayers.Layer.Google("Google Streets", {type: google.maps.MapTypeId.HYBRID});
-                            break;
-                        case "OSM":
-                                baseLayer = new OpenLayers.Layer.OSM("OpenStreetMap");
-                            break;
-                        case "WMS":
-                                baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
-                            break;
-                    }
-                    map = new OpenLayers.Map({
-                        div: "map",
-                        theme : null,
-                        projection: sm,
-                        numZoomLevels: 20,
-                        controls: values(controls),
-                        layers: [baseLayer, annotationLayer, participantsLayer]
-                    });
-                    newCenter = new OpenLayers.LonLat(data.center.coordinates[0], data.center.coordinates[1]);
-                    lastCenter = newCenter.clone();
-
-                    map.maxExtent = baseLayer.maxExtent;
-                    map.setCenter(newCenter, data.zoom_level);
-                    annotationLayer.projection = sm;
-                    annotationLayer.maxExtent = map.maxExtent;
-                    participantsLayer.maxExtent = map.maxExtent;
-
-                    //
-                    // setup all the drawing controls
-                    //
-                    $(".control").click(function(e) {
-                        var clicked = $(this).attr('id');
-                        enumerate(controls, function(name, ctrl) {
-                            if(name === clicked) {
-                                ctrl.activate();
+            
+            callbacks: {
+                receivedAnnotations: [
+                    function(data) {
+                        var feature;
+                        var untouched = keyset(annotations);
+                        iter(data, function(ann) {
+                            delete untouched[ann.resource_uri];
+                            if(!annotations.hasOwnProperty(ann.resource_uri)) {
+                                feature = geojson.read(ann.geometry)[0];
+        
+                                feature.attributes = $.extend(ann, {});
+                                annotationLayer.addFeatures(feature);
+                                annotations[ann.resource_uri] = feature;
                             }
-                            else {
-                                ctrl.deactivate();
+                            else if(annotations[ann.resource_uri].attributes.when != ann.when) {
+                                annotationLayer.destroyFeatures(annotations[ann.resource_uri]);
+                                feature = geojson.read(ann.geometry)[0];
+                                feature.attributes = $.extend(ann, {});
+                                annotationLayer.addFeatures(feature);
+                                annotations[ann.resource_uri] = feature;
                             }
                         });
-
-                        $(".control").each(function(i, elt) {
-                            if($(elt).attr('id') == clicked) {
-                                $(elt).addClass('ui-btn-active');
-                            }
-                            else {
-                                $(elt).removeClass('ui-btn-active');
-                            }
-                            $(elt).trigger('refresh');
+                        enumerate(untouched, function(resource_uri) {
+                            annotationLayer.destroyFeatures(annotations[resource_uri]);
                         });
-                    });
-
-                    //
-                    // setup the map-centering control using google geocoder
-                    //
-                    var geocoder = new google.maps.Geocoder();
-                    $("#recenter_on_addr").submit(function() {
-                        var address = $("#center_on_addr").val();
-                        if(address) {
-                            geocoder.geocode({ address : address}, function(results, statusCode) {
-                                if(statusCode === google.maps.GeocoderStatus.OK) {
-                                    var ll = results[0].geometry.location;
-                                    var realCenter = new OpenLayers.LonLat(ll.lng(), ll.lat());
-                                    realCenter.transform(gm, sm);
-                                    map.setCenter(realCenter,11);
-                                }
-                                else {
-                                    alert('Cannot find address');
-                                }
-                            });
+                        annotationLayer.redraw();
+                    }
+                ],
+    
+                receivedChats: [
+                    function(data) {
+                        //$("#chat_log>*").detach();
+                        iter(data, function(chat) {
+                            // for each non-private or me-directed chat in the log:
+                            if(!chat.private || chat.at.indexOf(user_id) != -1) {
+                            //      scan the text for the names in participants.  If the name exists, update it so that it's got <span class='$participant'></span> around it.
+                            // collect the "ats" from each non-private chat.  for each "at":
+                            //      update the css temporarily to highlight the participant for 5 seconds.
+                            //      append a temporary LineString from chat.user to each chat.at
+                            //      highlight the participant on the participants layer.
+                            //      append the chat text to the log.
+                            // if the chat is not private or is "at" this user:
+                            //      if the chat is private update the css so that it's marked as such in the log.
+                            //      append (when) user: to the
+                                var timestamp = new Date(chat.when);
+                                var chat_record = $("<div class='chat_item'></div>");
+                                chat_record.append("<span class='chat_time'>" + timestamp.toTimeString().substring(0,6) + "</span>");
+                                chat_record.append("<span class='chat_username'>" + participants[chat.user].user.username + "</span>");
+                                chat_record.append("<span class='chat_text'>" + chat.text + "</span>");
+                                $("#chat_log").append(chat_record);
+                            }
+                        });
+                        if(data.length > 0) {
+                            $("#chat_log").scrollTop($("#chat_log").scrollTop() + $("#chat_log>*").last().position().top);
                         }
-                        return false;
-                    });
-
-                }
-                else if(Math.abs(lastCenter.lon - data.center.coordinates[0]) > 0.0001 || Math.abs(lastCenter.lat - data.center.coordinates[1]) > 0.0001) {
-                    newCenter = new OpenLayers.LonLat(data.center.coordinates[0], data.center.coordinates[1]);
-                    lastCenter = newCenter.clone();
-
-                    map.setCenter(newCenter, data.zoom_level);
-
-                }
-            },
-
-            receivedSharedOverlays: function(data) {
-                var untouched = keyset(overlays);
-
-                iter(data, function(o) {
-                    if(overlays.hasOwnProperty(o.overlay.resource_uri)) {
-                        delete untouched[o.overlay.resource_uri];
-                        overlays[o.overlay.resource_uri].share();
+                        participantsLayer.redraw();
                     }
-                });
-                enumerate(untouched, function(k) {
-                    overlays[k].unshare();
-                });
-
-                map.setLayerIndex(annotationLayer, 9999);
-                map.setLayerIndex(participantsLayer, 10000);
+                ],
+    
+                receivedOverlays: [
+                    function(data) {
+                        iter(data, function(obj) {
+                            // append overlays to the overlay tab.  We only support WMS right now.
+                            if(!overlays.hasOwnProperty(obj.resource_uri)) {
+                                overlays[obj.resource_uri] = new Overlay(map, obj);
+                            }
+                        });
+                        map.setLayerIndex(annotationLayer, 9999);
+                        map.setLayerIndex(participantsLayer, 10000);
+        
+                    }
+                ],
+    
+                receivedParticipants: [
+                    function(data) {
+                        participants = {};
+                        $("#participant_list>*").detach();
+        
+                        iter(data, function(participant) {
+                            participants[participant.user.resource_uri] = participant;
+                            var f = participantsLayer.getFeatureBy('user', participant.user.resource_uri); // for each participant in the room, update their position on the map
+                            if(f) {
+                                var pt = new OpenLayers.Geometry.Point(
+                                    participant.where.coordinates[0],
+                                    participant.where.coordinates[1]
+                                ).transform(gm, sm);
+        
+                                f.geometry.x = pt.x;
+                                f.geometry.y = pt.y;
+                            }
+                            else {
+                                f = new OpenLayers.Feature.Vector(
+                                    new OpenLayers.Geometry.Point(
+                                        participant.where.coordinates[0],
+                                        participant.where.coordinates[1]
+                                    ).transform(gm, sm), participant);
+        
+                                f.style = {
+                                    fill : true,
+                                    fillColor : '#ff6666',
+                                    strokeColor : '#ff6666',
+                                    strokeWidth : 1,
+                                    fillOpacity : 0.6,
+                                    graphic : true,
+                                    graphicName : 'cross',
+                                    fontColor : '#000000',
+                                    fontWeight : 'bold',
+                                    fontFamily : 'Helvetica, Arial, sans-serif',
+                                    fontSize : '9pt',
+                                    pointRadius : 5,
+                                    label : participant.user.username,
+                                    labelAlign : 'l',
+                                    labelXOffset : 7
+                                };
+                                f.attributes = participant;
+                                f.user = participant.user.resource_uri;
+                                participantsLayer.addFeatures([f]);
+                            }
+        
+                            var display_name = participant.user.first_name ? (participant.user.first_name + ' ' + participant.user.last_name)  : participant.user.username;
+                            var heartbeat_time = new Date(participant.last_heartbeat);
+                            var email_link = $("<a class='user_email' data-role='button' data-mini='true' href='mailto:" + participant.user.email + "'>email</a>");
+        
+                            var participant_name = $("<li></li>")
+                                    .append($("<a class='username' href='#'>" + display_name + "</span>").data('user', participant.user.resource_uri))
+                                    .append($("<span class='user_heartbeat'>" + heartbeat_time.toTimeString().substring(0,5) + "</span>"))
+                                    .append(email_link);
+        
+                            $("#participant_list").append(participant_name);
+                        });
+        
+                        // TODO - click on user name in participant list to center on that user.
+                        //$(".username").click(function(k) {
+                        //    var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
+                        //    map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
+                        //});
+        
+                        participantsLayer.redraw();
+                    }
+                ],
+    
+                //receivedRoles: [
+                //    function(data) {
+                //        roles = data;
+                //    }
+                //],
+    
+                receivedRoom: [
+                    function(data) {
+                        var baseLayer;
+                        var newCenter;
+        
+                        if(!map) {
+        
+                            //
+                            // setup the map
+                            //
+                            switch(data.base_layer_type) {
+                                case "GoogleTerrain":
+                                        baseLayer = new OpenLayers.Layer.Google("Google Terrain", {type: google.maps.MapTypeId.TERRAIN});
+                                    break;
+                                case "GoogleSatellite":
+                                        baseLayer = new OpenLayers.Layer.Google("Google Satellite", {type: google.maps.MapTypeId.SATELLITE});
+                                    break;
+                                case "GoogleHybrid":
+                                        baseLayer = new OpenLayers.Layer.Google("Google Streets", {type: google.maps.MapTypeId.HYBRID});
+                                    break;
+                                case "OSM":
+                                        baseLayer = new OpenLayers.Layer.OSM("OpenStreetMap");
+                                    break;
+                                case "WMS":
+                                        baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
+                                    break;
+                            }
+                            map = new OpenLayers.Map({
+                                div: "map",
+                                theme : null,
+                                projection: sm,
+                                numZoomLevels: 20,
+                                controls: values(controls),
+                                layers: [baseLayer, annotationLayer, participantsLayer]
+                            });
+                            newCenter = new OpenLayers.LonLat(data.center.coordinates[0], data.center.coordinates[1]);
+                            lastCenter = newCenter.clone();
+        
+                            map.maxExtent = baseLayer.maxExtent;
+                            map.setCenter(newCenter, data.zoom_level);
+                            annotationLayer.projection = sm;
+                            annotationLayer.maxExtent = map.maxExtent;
+                            participantsLayer.maxExtent = map.maxExtent;
+        
+                            //
+                            // setup all the drawing controls
+                            //
+                            $(".control").click(function(e) {
+                                var clicked = $(this).attr('id');
+                                enumerate(controls, function(name, ctrl) {
+                                    if(name === clicked) {
+                                        ctrl.activate();
+                                    }
+                                    else {
+                                        ctrl.deactivate();
+                                    }
+                                });
+        
+                                $(".control").each(function(i, elt) {
+                                    if($(elt).attr('id') == clicked) {
+                                        $(elt).addClass('ui-btn-active');
+                                    }
+                                    else {
+                                        $(elt).removeClass('ui-btn-active');
+                                    }
+                                    $(elt).trigger('refresh');
+                                });
+                            });
+        
+                            //
+                            // setup the map-centering control using google geocoder
+                            //
+                            var geocoder = new google.maps.Geocoder();
+                            $("#recenter_on_addr").submit(function() {
+                                var address = $("#center_on_addr").val();
+                                if(address) {
+                                    geocoder.geocode({ address : address}, function(results, statusCode) {
+                                        if(statusCode === google.maps.GeocoderStatus.OK) {
+                                            var ll = results[0].geometry.location;
+                                            var realCenter = new OpenLayers.LonLat(ll.lng(), ll.lat());
+                                            realCenter.transform(gm, sm);
+                                            map.setCenter(realCenter,11);
+                                        }
+                                        else {
+                                            alert('Cannot find address');
+                                        }
+                                    });
+                                }
+                                return false;
+                            });
+        
+                        }
+                        else if(Math.abs(lastCenter.lon - data.center.coordinates[0]) > 0.0001 || Math.abs(lastCenter.lat - data.center.coordinates[1]) > 0.0001) {
+                            newCenter = new OpenLayers.LonLat(data.center.coordinates[0], data.center.coordinates[1]);
+                            lastCenter = newCenter.clone();
+        
+                            map.setCenter(newCenter, data.zoom_level);
+        
+                        }
+                    }
+                ],
+    
+                receivedSharedOverlays: [
+                    function(data) {
+                        var untouched = keyset(overlays);
+        
+                        iter(data, function(o) {
+                            if(overlays.hasOwnProperty(o.overlay.resource_uri)) {
+                                delete untouched[o.overlay.resource_uri];
+                                overlays[o.overlay.resource_uri].share();
+                            }
+                        });
+                        enumerate(untouched, function(k) {
+                            overlays[k].unshare();
+                        });
+        
+                        map.setLayerIndex(annotationLayer, 9999);
+                        map.setLayerIndex(participantsLayer, 10000);
+                    }
+                ]
             }
         });
+        
+        bb.registerCallback('receivedRoles',function(data) {
+                                                roles = data;
+                                            });
 
         //
         // Make sure the user has enabled geolocation before tracking.

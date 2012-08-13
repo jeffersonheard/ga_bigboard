@@ -43,6 +43,71 @@ function BigBoard(args) {
     var bb_api_heartbeat = either(args, 'bb_api_heartbeat', '../heartbeat/');
 
     var location = [0,0];
+    
+    
+    /* callbacks has the structure:
+        
+        callbacks = {
+            receivedRoom: [
+                roomcallback1,
+                ...
+            ],
+            receivedRoles: [
+                rolescallback1,
+                ...
+            ],
+            receivedParticipants: [
+                participantscallback1,
+                ...
+            ],
+            receivedChats: [
+                chatscallback1,
+                ...
+            ],
+            receivedOverlays: [
+                overlayscallback1,
+                ...
+            ],
+            receivedSharedOverlays: [
+                shared_overlayscallback1,
+                ...
+            ],
+            receivedAnnotations: [
+                annotationscallback1,
+                ...
+            ]
+        }
+        
+    */
+    
+    // Check if callbacks included in args
+    if(args.hasOwnProperty('callbacks')) {
+        var callbacks = args.callbacks;
+    } else {
+        var callbacks = {};
+    }
+    
+    // adds the provided callback function to the callbacks object under the desired type
+    function registerCallback(type, func) {
+        if( callbacks.hasOwnProperty(type) == false ) {
+            callbacks[type] = [];
+        }
+        callbacks[type].push(func);
+    }
+    
+    // runs all callbacks of the given type, passing obj, textStatus and jqXHR
+    function runCallbacks(type,obj,textStatus,jqXHR) {
+        if(callbacks.hasOwnProperty(type)) {
+            for( i in callbacks[type] ){
+                if( callbacks[type].hasOwnProperty(i) ){
+                    callbacks[type][i](obj, textStatus, jqXHR);
+                }
+            }
+        } else if(debug) {
+            console.log('No callbacks of type: '+type);
+        }
+    }
+    
 
     if(debug) console.log('creating bigboard object');
 
@@ -60,7 +125,10 @@ function BigBoard(args) {
     function receivedAnnotations(data, textStatus, jqXHR) {
         annotations = data.objects;
         if(debug) console.log("latest version of annotations received");
-        either(args, 'receivedAnnotations', noop)(annotations, textStatus, jqXHR);
+        
+        runCallbacks('receivedAnnotations', annotations, textStatus, jqXHR);
+        
+        //either(args, 'receivedAnnotations', noop)(annotations, textStatus, jqXHR);
         received_annotations = true;
     }
 
@@ -68,7 +136,10 @@ function BigBoard(args) {
         if(data.objects) {
             chats = data.objects;
             if(debug) console.log("latest version of chats received");
-            either(args, 'receivedChats', noop)(chats, textStatus, jqXHR);
+            
+            runCallbacks('receivedChats', chats, textStatus, jqXHR);
+            
+            //either(args, 'receivedChats', noop)(chats, textStatus, jqXHR);
             received_chats= true;
             if(chats.length > 0)
                 last_chat_update = chats[chats.length-1].id;
@@ -78,7 +149,10 @@ function BigBoard(args) {
     function receivedOverlays(data, textStatus, jqXHR) {
         overlays = data.objects;
         if(debug) console.log("latest version of overlays received");
-        either(args, 'receivedOverlays', noop)(overlays, textStatus, jqXHR);
+        
+        runCallbacks('receivedOverlays', overlays, textStatus, jqXHR);
+        
+        //either(args, 'receivedOverlays', noop)(overlays, textStatus, jqXHR);
         received_overlays = true;
     }
 
@@ -98,14 +172,20 @@ function BigBoard(args) {
             }
         });
         if(debug) console.log("latest version of participants received");
-        either(args, 'receivedParticipants', noop)(participants, textStatus, jqXHR);
+        
+        runCallbacks('receivedParticipants', participants, textStatus, jqXHR);
+        
+        //either(args, 'receivedParticipants', noop)(participants, textStatus, jqXHR);
         received_participants = true;
     }
     
     function receivedRoles(data, textStatus, jqXHR) {
         roles = data.objects;
         if(debug) console.log("latest version of roles received");
-        either(args, 'receivedRoles', noop)(roles, textStatus, jqXHR);
+        
+        runCallbacks('receivedRoles', roles, textStatus, jqXHR);
+        
+        //either(args, 'receivedRoles', noop)(roles, textStatus, jqXHR);
         received_roles = true;
     }
 
@@ -113,14 +193,20 @@ function BigBoard(args) {
         room = data.objects[0];
         if(debug) { console.log("latest version of room received");}
         if(debug) { console.log(room);}
-        either(args, 'receivedRoom', noop)(room, textStatus, jqXHR);
+        
+        runCallbacks('receivedRoom', room, textStatus, jqXHR);
+        
+        //either(args, 'receivedRoom', noop)(room, textStatus, jqXHR);
         received_room = true;
     }
 
     function receivedSharedOverlays(data, textStatus, jqXHR) {
         shared_overlays = data.objects;
         if(debug) { console.log("latest version of shared overlays received");}
-        either(args, 'receivedSharedOverlays', noop)(shared_overlays, textStatus, jqXHR);
+        
+        runCallbacks('receivedSharedOverlays', shared_overlays, textStatus, jqXHR);
+        
+        //either(args, 'receivedSharedOverlays', noop)(shared_overlays, textStatus, jqXHR);
         received_shared_overlays = true;
     }
 
@@ -515,7 +601,9 @@ function BigBoard(args) {
         unshareLayer: unshareLayer,
         persistAnnotation: persistAnnotation,
         deleteAnnotation: deleteAnnotation,
-        setRoomCenter: setRoomCenter
+        setRoomCenter: setRoomCenter,
+        
+        registerCallback: registerCallback
     };
 
 }
