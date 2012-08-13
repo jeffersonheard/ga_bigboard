@@ -27,7 +27,7 @@ class WriteOnlyMineAuthorization(Authorization):
 class ReadOnlyMyRoleAuthorization(Authorization):
     def apply_limits(self, request, object_list):
         if request and hasattr(request, 'user'):
-            return object_list.filter(roles__users=request.user)
+            return object_list.filter(roles__users=request.user).distinct()
         else:
             return object_list.none()
 
