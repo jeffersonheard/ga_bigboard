@@ -189,11 +189,11 @@ $(document).ready(function() {
                     }
                 ],
     
-                //receivedRoles: [
-                //    function(data) {
-                //        roles = data;
-                //    }
-                //],
+                receivedRoles: [
+                    function(data) {
+                        roles = data;
+                    }
+                ],
     
                 receivedRoom: [
                     function(data) {
@@ -317,10 +317,6 @@ $(document).ready(function() {
                 ]
             }
         });
-        
-        bb.registerCallback('receivedRoles',function(data) {
-                                                roles = data;
-                                            });
 
         //
         // Make sure the user has enabled geolocation before tracking.
