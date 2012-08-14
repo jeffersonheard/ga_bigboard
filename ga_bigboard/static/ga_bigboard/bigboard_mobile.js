@@ -516,5 +516,5 @@ $(document).ready(function() {
         }
     });
 
-    bb.join(room_name);
+    bb.join(0);  // delay start by 0ms
 });

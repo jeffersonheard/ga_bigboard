@@ -9,6 +9,8 @@ function BigBoard(args) {
     var roles;
     var annotations;
     var last_chat_update = 0;
+    
+    var started = false;    // Whether this bigboard instance has been started
 
     var received_annotations = false;
     var received_chats = false;
@@ -332,26 +334,37 @@ function BigBoard(args) {
         //either(args, 'loginSuccessful', noop)(data, textStatus, jqXHR);
     }
 
-    function join() {
-        if(!room_name || !user_name || !api_key) {
-            console.log("Please define the global variables room, username, and api_key in a script tag above bigboard_mainloop.js. (room, username, and api_key are listed subsequently)");
-            console.log(user_name);
-            console.log(api_key);
-        }
-
-        my_username = user_name;
-        my_password = api_key;
-
-        var tok = user_name + ':' + api_key;
-        hash = "Basic " + tok;
-
-        $.ajax({
-            url : bb_api_join,
-            data : { room : room_name },
-            accepts : 'application/json',
-            success : receivedLoginCredentials,
-            error : errorHandler(either(args, 'failedLogin', noop))
-        });
+    function join(delay) {
+        
+        // default delay of 0ms before starting bigboard instance.
+        delay = typeof delay !== 'undefined' ? delay : 0;
+        
+        // the room has been set to start, so other references to this instance
+        // should check the started bool and not try to start it.
+        started = true;
+        
+        // delays the starting of the room by delay amount of millisecs
+        setTimeout(function() {
+            if(!room_name || !user_name || !api_key) {
+                console.log("Please define the global variables room, username, and api_key in a script tag above bigboard_mainloop.js. (room, username, and api_key are listed subsequently)");
+                console.log(user_name);
+                console.log(api_key);
+            }
+    
+            my_username = user_name;
+            my_password = api_key;
+    
+            var tok = user_name + ':' + api_key;
+            hash = "Basic " + tok;
+    
+            $.ajax({
+                url : bb_api_join,
+                data : { room : room_name },
+                accepts : 'application/json',
+                success : receivedLoginCredentials,
+                error : errorHandler(either(args, 'failedLogin', noop))
+            });
+        }, delay);
 
     }
 
@@ -570,8 +583,8 @@ function BigBoard(args) {
         }
     }
 
-    function start() {
-
+    function start(delay) {
+        
         if(navigator.geolocation) {
             navigator.geolocation.watchPosition(function(position) {
                location = [position.coords.longitude, position.coords.latitude];
@@ -587,6 +600,10 @@ function BigBoard(args) {
     function end() {
         clearInterval(main_loop);
     }
+    
+    function isStarted() {
+        return started;
+    }
 
     return {
         room : room_name,
@@ -594,6 +611,8 @@ function BigBoard(args) {
         username : my_username, // DEPRECATED
         password : my_password, // DEPRECATED
         location : location,
+        
+        isStarted: isStarted,
 
         start : start,
         end : end,
