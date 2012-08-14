@@ -326,7 +326,10 @@ function BigBoard(args) {
         });
 
         if(debug) { console.log("succesfully logged in"); }
-        either(args, 'loginSuccessful', noop)(data, textStatus, jqXHR);
+        
+        runCallbacks('loginSuccessful', data, textStatus, jqXHR);
+        
+        //either(args, 'loginSuccessful', noop)(data, textStatus, jqXHR);
     }
 
     function join() {

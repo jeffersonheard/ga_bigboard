@@ -43,12 +43,14 @@ $(document).ready(function() {
             api_key : api_key,
             debug : true,
 
-            loginSuccessful : function(data) {
-                console.log('starting data streams');
-                bb.start();
-            },
-            
             callbacks: {
+                loginSuccessful: [
+                    function(data) {
+                        console.log('starting data streams');
+                        bb.start();
+                    }
+                ],
+                
                 receivedAnnotations: [
                     function(data) {
                         var feature;
