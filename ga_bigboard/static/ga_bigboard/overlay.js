@@ -107,7 +107,7 @@ OpenLayers.Format.TastyPie = OpenLayers.Class(OpenLayers.Format.JSON, {
 });
 
 
-function Overlay(m, server_object) {
+function Overlay(m, server_object, bb) {
     /* server_object contains:
         name,
         description,

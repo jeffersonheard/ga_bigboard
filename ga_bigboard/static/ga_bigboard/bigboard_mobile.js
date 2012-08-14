@@ -114,7 +114,11 @@ $(document).ready(function() {
                         iter(data, function(obj) {
                             // append overlays to the overlay tab.  We only support WMS right now.
                             if(!overlays.hasOwnProperty(obj.resource_uri)) {
+<<<<<<< HEAD
+                                overlays[obj.resource_uri] = new Overlay(map, obj, bb);
+=======
                                 overlays[obj.resource_uri] = new Overlay(map, obj);
+>>>>>>> 6919726c11c78cc64fad9e41c6f363387181b0c6
                             }
                         });
                         map.setLayerIndex(annotationLayer, 9999);
