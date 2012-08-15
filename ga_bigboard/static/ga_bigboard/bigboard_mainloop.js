@@ -1,5 +1,3 @@
-var map;
-
 function BigBoard(args) {
     var overlays;
     var shared_overlays;

@@ -279,7 +279,9 @@ function Overlay(m, server_object, bb) {
     m.addLayers([layer]);
     deactivate();
 
-    return $.extend(server_object, {
+    // Merging directly into server_object affects the original object up the callstack
+    // It seems to work better to merge into a new object
+    return $.extend({},server_object, {
         layer : layer,
         update: update,
         share:  share,
