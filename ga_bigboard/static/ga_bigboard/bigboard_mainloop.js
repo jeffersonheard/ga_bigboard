@@ -454,6 +454,10 @@ function BigBoard(args) {
             z:zoom
         }, errorHandler(noop));
     }
+    
+    function getRoomCenter() {
+        return $.extend({},room.center,{zoom_level:room.zoom_level});
+    }
 
     var once = true;
     function mainLoop() {
@@ -515,7 +519,10 @@ function BigBoard(args) {
         unshareLayer: unshareLayer,
         persistAnnotation: persistAnnotation,
         deleteAnnotation: deleteAnnotation,
-        setRoomCenter: setRoomCenter
+        setRoomCenter: setRoomCenter,
+        getRoomCenter: getRoomCenter,
+        
+        registerCallback: registerCallback
     };
 
 }
