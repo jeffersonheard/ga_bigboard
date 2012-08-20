@@ -417,7 +417,7 @@ $(document).ready(function() {
     };
     controls.select_control.onUnselect = function(annotation) {
         iter(annotations, function(ann) {
-            ann.selected = ann.selected && ann.attributes.resource_uri !== annotations.attributes.resource_uri;
+            ann.selected = ann.selected && ann.attributes.resource_uri !== annotation.attributes.resource_uri;
         });
     };
 
@@ -483,7 +483,7 @@ $(document).ready(function() {
                             info_container.append('<li><img src="' + ann.attributes.image + '"/></li>');
                             break;
                         default:
-                            info_container.append('<li>' + v + '<li>');
+                            info_container.append('<li>' + v + '</li>');
                             break;
                     }
                 }
