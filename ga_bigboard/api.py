@@ -202,6 +202,24 @@ class ChatResource(GeoResource):
         return super(ChatResource, self).obj_create(bundle, request, user=request.user)
 
 
+class PersonalViewResource(GeoResource):
+    room = f.ForeignKey(to=RoomResource, attribute='room')
+    user = f.ForeignKey(to=UserResource, attribute='user')
+    
+    class Meta:
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        queryset = models.PersonalView.objects.all()
+        resource_name = 'personal_views'
+        allowed_methods = ('get','post','put','delete')
+        filtering = {
+            'room' : ALL_WITH_RELATIONS,
+            'user' : ALL_WITH_RELATIONS,
+            'when' : ALL,
+            'id' : ALL
+        }
+
+
 api_v4 = Api('v4')
 api_v4.register(UserResource())
 api_v4.register(RoleResource())
@@ -211,3 +229,4 @@ api_v4.register(SharedOverlayResource())
 api_v4.register(RoomResource())
 api_v4.register(ParticipantResource())
 api_v4.register(ChatResource())
+api_v4.register(PersonalViewResource())
