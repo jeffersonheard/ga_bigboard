@@ -107,7 +107,7 @@ OpenLayers.Format.TastyPie = OpenLayers.Class(OpenLayers.Format.JSON, {
 });
 
 
-function Overlay(m, server_object) {
+function Overlay(m, server_object, bb) {
     /* server_object contains:
         name,
         description,
@@ -279,7 +279,9 @@ function Overlay(m, server_object) {
     m.addLayers([layer]);
     deactivate();
 
-    return $.extend(server_object, {
+    // Merging directly into server_object affects the original object up the callstack
+    // It seems to work better to merge into a new object
+    return $.extend({},server_object, {
         layer : layer,
         update: update,
         share:  share,
