@@ -6,6 +6,7 @@ function BigBoard(args) {
     var chats = [];
     var roles;
     var annotations;
+    var personal_views;
     var last_chat_update = 0;
     
     var started = false;    // Whether this bigboard instance has been started
@@ -17,6 +18,7 @@ function BigBoard(args) {
     var received_roles = false;
     var received_room = false;
     var received_shared_overlays = false;
+    var received_personal_views = false;
 
 
     var my_username = args.user_name; // DEPRECATED
@@ -41,6 +43,7 @@ function BigBoard(args) {
     var bb_api_join = either(args, 'bb_api_joins', '../join/');
     var bb_api_leave = either(args, 'bb_api_leave', '../leave/');
     var bb_api_heartbeat = either(args, 'bb_api_heartbeat', '../heartbeat/');
+    var bb_api_personalviews = either(args, 'bb_api_personalviews', '../api/v4/personal_views/');
 
     var location = [0,0];
     
@@ -209,6 +212,15 @@ function BigBoard(args) {
         //either(args, 'receivedSharedOverlays', noop)(shared_overlays, textStatus, jqXHR);
         received_shared_overlays = true;
     }
+    
+    function receivedPersonalViews(data, textStatus, jqXHR) {
+        personal_views = data.objects;
+        if(debug) { console.log("latest version of personal views received"); }
+        
+        runCallbacks('receivedPersonalViews', personal_views, textStatus, jqXHR);
+        
+        received_personal_views = true;
+    }
 
     function refreshAnnotations() {
         received_annotations = false;
@@ -308,6 +320,18 @@ function BigBoard(args) {
             success : receivedSharedOverlays,
             error : errorHandler(either(args, 'refreshSharedOverlaysError', noop)),
             beforeSend : function(xhr) { xhr.setRequestHeader('Authorization', hash)}
+        });
+    }
+    
+    // Refreshes the personal views list
+    function refreshPersonalViews() {
+        received_personal_views = false;
+        $.ajax({
+            url : bb_api_personalviews,
+            data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
+            accepts : 'application/json',
+            success : receivedPersonalViews,
+            error : errorHandler(either(args, 'refreshPersonalViewsError', noop))
         });
     }
 
@@ -571,6 +595,7 @@ function BigBoard(args) {
                     refreshParticipants();
                     refreshSharedOverlays();
                     refreshChats();
+                    refreshPersonalViews();
                     once = false;
                 }
             }
@@ -582,6 +607,7 @@ function BigBoard(args) {
             if(received_roles) { refreshRoles(); }
             if(received_shared_overlays) { refreshSharedOverlays(); }
             if(received_room) { refreshRoom(); }
+            if(received_personal_views) { refreshPersonalViews(); }
         }
     }
 
@@ -606,6 +632,40 @@ function BigBoard(args) {
     function isStarted() {
         return started;
     }
+    
+    function addPersonalView(name, description, lon, lat, zoom) {
+        // Add a personal view to the server
+        
+        var data = {
+            name: name,
+            description: description,
+            user : my_user,
+            room : room.resource_uri,
+            zoom_level: zoom,
+            where : { coordinates: [lon, lat], type:'Point' }
+        };
+        
+        $.ajax({
+            url : bb_api_personalviews + '?username=' + user_name + "&api_key=" + api_key,
+            type : 'POST',
+            data: JSON.stringify(data),
+            cache: false,
+            contentType: 'application/json',
+            processData: false,
+            error: errorHandler(noop),
+            success: function(data) { console.log('success'); console.log(data); }
+        });
+    }
+    
+    function deletePersonalView(view) {
+        // Remove the personal view from the server
+        
+        $.ajax({
+            url: view.resource_uri + "?username=" + user_name + "&api_key=" + api_key,
+            type: 'DELETE',
+            error : errorHandler(either(args, 'failedDeleteAnnotation', noop))
+        });
+    }
 
     return {
         room : room_name,
@@ -627,6 +687,8 @@ function BigBoard(args) {
         deleteAnnotation: deleteAnnotation,
         setRoomCenter: setRoomCenter,
         getRoomCenter: getRoomCenter,
+        addPersonalView: addPersonalView,
+        deletePersonalView: deletePersonalView,
         
         registerCallback: registerCallback
     };

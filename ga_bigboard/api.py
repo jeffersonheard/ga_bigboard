@@ -218,6 +218,9 @@ class PersonalViewResource(GeoResource):
             'when' : ALL,
             'id' : ALL
         }
+    
+    def obj_create(self, bundle, request=None, **kwargs):
+        return super(PersonalViewResource, self).obj_create(bundle, request, user=request.user)
 
 
 api_v4 = Api('v4')
