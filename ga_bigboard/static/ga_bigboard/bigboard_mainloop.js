@@ -328,7 +328,7 @@ function BigBoard(args) {
         received_personal_views = false;
         $.ajax({
             url : bb_api_personalviews,
-            data : { room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
+            data : { user__username: user_name, room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
             accepts : 'application/json',
             success : receivedPersonalViews,
             error : errorHandler(either(args, 'refreshPersonalViewsError', noop))
