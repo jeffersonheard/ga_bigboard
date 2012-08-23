@@ -224,3 +224,36 @@ class Chat(m.Model):
 
     class Meta:
         ordering = ['when']
+
+
+class PersonalView(m.Model):
+    """An entry for list of interesting views stored per user per room.
+    """
+    room = m.ForeignKey(Room, db_index=True)
+    
+    #: the user to whom this item belongs
+    user = m.ForeignKey(User)
+    
+    #: name of the location
+    name = m.CharField(max_length=255, blank=False)
+    
+    #: optional description of the location
+    description = m.TextField(blank=True)
+    
+    #: center of map at the desired view
+    where = m.PointField(srid=4326, null=False);
+    
+    #: The zoom level of this view
+    zoom_level = m.IntegerField(default=5, null=False)
+    
+    #: when this view was stored
+    when = m.DateTimeField(auto_now_add=True, db_index=True)
+    
+    def __unicode__(self):
+        return self.room.name + '.' + self.user.username + ' -> ' + self.name
+    
+    objects = m.GeoManager()
+    
+    class Meta:
+        ordering = ['when']
+    

@@ -32,6 +32,7 @@ $(document).ready(function() {
     var geojson = new OpenLayers.Format.GeoJSON();
     var roles = null;
     var overlays = {};
+    var personalViews = {};
 
     function init() { if(!initted) {
         initted = true;
@@ -316,7 +317,80 @@ $(document).ready(function() {
                         map.setLayerIndex(annotationLayer, 9999);
                         map.setLayerIndex(participantsLayer, 10000);
                     }
-                ]
+                ],
+                
+                // adds the personal views to the list
+                receivedPersonalViews: [
+                    function(data) {
+                        iter(data, function(obj) {
+                            
+                            // Check if personal view has already been added
+                            if(!personalViews.hasOwnProperty(obj.resource_uri)) {
+                                personalViews[obj.resource_uri] = obj;
+                                
+                                $('<li/>', {
+                                                id: 'views_item_'+obj.id
+                                            }).appendTo('#personal_views_list');
+                                $('<div/>', {
+                                                id: 'views_item_top_'+obj.id,
+                                                html: "\
+                                                    <span class='views-list-operations'>\
+                                                        <span id='views_item_go_icon_"+obj.id+"' data-action='jump_to_personal_view' data-view-index='"+obj.resource_uri+"' class='views-item-go-icon'>Go</span>\
+                                                        <span id='views_item_remove_icon_"+obj.id+"' data-action='remove_personal_view' data-view-index='"+obj.resource_uri+"' class='views-item-go-icon'>x</span>\
+                                                    </span>\
+                                                    "+obj.name+"<br />"
+                                            }).appendTo('#views_item_'+obj.id);
+                                $('<div/>', {
+                                                id: 'views_item_extra_'+obj.id,
+                                                class: 'views-item-extra'
+                                            }).appendTo('#views_item_'+obj.id);
+                                $('<span/>', {
+                                                id: 'views_item_toggle_description_'+obj.id,
+                                                class: 'views-item-toggle-description',
+                                                html: 'Show Description'
+                                            }).appendTo('#views_item_extra_'+obj.id);
+                                $('<div/>', {
+                                                id: 'views_item_description_'+obj.id,
+                                                style: 'display: none;',
+                                                html: obj.description
+                                            }).appendTo('#views_item_extra_'+obj.id);
+                                
+                                // view description toggle
+                                $('#views_item_toggle_description_'+obj.id).click(function() {
+                                    if( $('#views_item_description_'+obj.id).css('display') == 'none' ) {
+                                        $('#views_item_description_'+obj.id).show(150);
+                                        $('#views_item_toggle_description_'+obj.id).html('Hide Description');
+                                    } else {
+                                        $('#views_item_description_'+obj.id).hide(150);
+                                        $('#views_item_toggle_description_'+obj.id).html('Show Description');
+                                    }
+                                });
+                                
+                                // sets map center to chosen personal view
+                                $('#views_item_go_icon_'+obj.id).click(function(e) {
+                                    var uri = $(this).data('view-index');
+                                    var center = personalViews[uri];
+                                    
+                                    var newCenter = new OpenLayers.LonLat(center.where.coordinates[0], center.where.coordinates[1])
+                                    newCenter.transform(gm, sm);
+                                    map.setCenter(newCenter, center.zoom_level); 
+                                });
+                                
+                                // removes the chosen personal view
+                                $('#views_item_remove_icon_'+obj.id).click(function(e) {
+                                    // delete on server and remove from list
+                                    var uri = $(this).data('view-index');
+                                    var view = personalViews[uri];
+                                    
+                                    $('#views_item_'+view.id).remove();
+                                    
+                                    bb.deletePersonalView( view );
+                                });
+                            }
+                        });
+                        
+                    }
+                ]   // end receivedPersonalViews
             }
         });
 
@@ -367,9 +441,13 @@ $(document).ready(function() {
             });
         }
 
-
+        // chat log
         var rest_of_height = contentHeight-360;
         $("#chat_log").height(rest_of_height);
+        
+        // personal views
+        rest_of_height = contentHeight-305;
+        $("#personal_views_list").height(rest_of_height);
 
         // Map zoom
         $("#plus").click(function() { map.zoomIn(); });
@@ -417,7 +495,7 @@ $(document).ready(function() {
     };
     controls.select_control.onUnselect = function(annotation) {
         iter(annotations, function(ann) {
-            ann.selected = ann.selected && ann.attributes.resource_uri !== annotations.attributes.resource_uri;
+            ann.selected = ann.selected && ann.attributes.resource_uri !== annotation.attributes.resource_uri;
         });
     };
 
@@ -431,6 +509,20 @@ $(document).ready(function() {
     //    );
     //    return false;
     //});
+    
+    // add teh current center/zoom to personal views
+    $('#bb_map_add_personal_view_form').submit(function(e) {
+        var name = $('#bb_map_add_personal_view_name').val();
+        var description = $('#bb_map_add_personal_view_description').val();;
+        
+        var c = map.getCenter();
+        c.transform(sm, gm);
+        bb.addPersonalView(name, description, c.lon, c.lat, map.getZoom());
+        
+        $('#bb_map_add_personal_view_name').val('');
+        $('#bb_map_add_personal_view_description').val('');
+        return false;
+    });
 
     $("#center_all_here").submit(function() {
         var c = map.getCenter();
@@ -483,7 +575,7 @@ $(document).ready(function() {
                             info_container.append('<li><img src="' + ann.attributes.image + '"/></li>');
                             break;
                         default:
-                            info_container.append('<li>' + v + '<li>');
+                            info_container.append('<li>' + v + '</li>');
                             break;
                     }
                 }

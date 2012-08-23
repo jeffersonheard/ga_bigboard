@@ -131,6 +131,49 @@
             padding-right: 0.5em;
             text-align: justify;
         }
+        
+        
+        #personal_views_list {
+            height: 80px;
+            overflow: auto;
+            margin: 0 0 0 0;
+            /*padding: 5px 5px 0 5px;*/
+            padding: 5px 0 5px 0;
+            list-style: none;
+        }
+        #personal_views_list > li {
+            margin: 0 0 0 0;
+            padding: 0 0 15px 5px;
+            list-style: none;
+            border-bottom: 1px solid 505050;
+        }
+        .views-list-operations {
+            float: right;
+            color: darkblue;
+        }
+        
+        .views-item-go-icon {
+            cursor: hand;
+            cursor: pointer;
+            padding: 0 5px 0 0;
+        }
+        .views-item-remove-icon {
+            cursor: hand;
+            cursor: pointer;
+            padding: 0 5px 0 0;
+        }
+        .views-item-extra {
+            padding: 5px 0 0 0;
+        }
+        
+        .views-item-toggle-description {
+            cursor: hand;
+            cursor: pointer;
+        }
+        .views-item-toggle-description:hover {
+            color: darkblue;
+        }
+        
     </style>
 </head>
 <body>
@@ -291,6 +334,22 @@
                     </form>
                 </li>
             </ul>
+            
+            <ul data-role="listview" id="personal_views" class='navigator'>
+                <li id="personal_views_header" data-role='list-divider'>Personal Views</li>
+                <li>
+                    <form id='bb_map_add_personal_view_form'>
+                        Name:<br />
+                        <input id='bb_map_add_personal_view_name' class='bb-map-add-personal-view-name' type='text' /><br />
+                        Description:<br />
+                        <textarea id='bb_map_add_personal_view_description' class='bb-map-add-personal-view-description'></textarea><br />
+                        <input id='bb_map_add_personal_view_submit' type='submit' value='Add New View' />
+                    </form>
+                </li>
+
+                <li data-role="list-divider">Locations</li>
+                <li id="personal_views_list"></li>
+            </ul>
 
             <div id="map"></div>
             <div id="zoomctl" data-role="controlgroup" data-type="vertical">
@@ -308,6 +367,7 @@
                 <a data-role="button" class='menuitem' id="show_overlays" href="#">Overlays</a>
                 <a data-role="button" class='menuitem' id="show_annotations" href="#">Annotations</a>
                 <a data-role="button" class='menuitem' id="show_discussions" href="#">Discussions</a>
+                <a data-role="button" class='menuitem' id="show_personal_views" href="#">Personal Views</a>
 
             </span>
             <span data-role="controlgroup" data-mini="true" data-type="horizontal" id="logout_group">

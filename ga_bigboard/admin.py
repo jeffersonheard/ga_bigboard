@@ -10,3 +10,5 @@ admin.site.register(models.CustomControl)
 admin.site.register(models.SharedOverlay)
 admin.site.register(models.Overlay)
 
+admin.site.register(models.PersonalView, admin_class=admin.OSMGeoAdmin)
+
