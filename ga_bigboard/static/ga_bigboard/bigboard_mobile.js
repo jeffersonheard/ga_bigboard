@@ -454,7 +454,10 @@ $(document).ready(function() {
                 $.mobile.changePage("#popup", "pop");
             });
         }
-
+        
+        // overlays
+        $('#overlays').height(contentHeight+25);
+        
         // chat log
         var rest_of_height = contentHeight-502;
         $("#chat_log").height(rest_of_height);
