@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}ga_bigboard/jquery.mobile-1.1.0/jquery.mobile-1.1.0.min.css" />
     <script type="text/javascript" src='{{ STATIC_URL}}ga_bigboard/jquery-1.7.2.min.js'></script>
     <script type="text/javascript" src='{{ STATIC_URL}}ga_bigboard/jquery.mobile-1.1.0/jquery.mobile-1.1.0.min.js'></script>
+    <script type='text/javascript' src='{{STATIC_URL}}ga_bigboard/jquery-url-parser/purl.js'></script>
 
     <!-- Mobile OpenLayers -->
 
@@ -321,9 +322,16 @@
                         <input type="submit" value="Center all here">                            
                     </form>
                 </li>
-
+                
+                <li data-role="list-divider">Get Current View URL</li>
+                <li>
+                    <input id='bb_get_current_view_url' type='button' value='Get Current Url' />
+                    <input id='bb_current_view_url' type='text' />
+                </li>
+                
                 <li data-role="list-divider">Participant list</li>
                 <li id="participant_list"></li>
+                
                 <li data-role="list-divider">Chat log</li>
 
                 <li id="chat_log"></li>

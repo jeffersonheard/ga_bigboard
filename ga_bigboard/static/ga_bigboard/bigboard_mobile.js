@@ -237,7 +237,21 @@ $(document).ready(function() {
                             lastCenter = newCenter.clone();
         
                             map.maxExtent = baseLayer.maxExtent;
-                            map.setCenter(newCenter, data.zoom_level);
+                            
+                            // if a center has not been set in the url parameters, set to the room center, otherwise use the passed center
+                            urldata = $.url();
+                            if( typeof urldata.param('where') != 'undefined' && typeof urldata.param('zoom_level') != 'undefined' ) {
+                                // a center has been specified in the url
+                                var newC = new OpenLayers.LonLat(urldata.param('where').coordinates[0], urldata.param('where').coordinates[1])
+                                newC.transform(gm, sm);
+                                map.setCenter(newC, urldata.param('zoom_level')); 
+                                
+                            } else {
+                                // use default room center
+                                map.setCenter(newCenter, data.zoom_level);
+                            }
+                            
+                            
                             annotationLayer.projection = sm;
                             annotationLayer.maxExtent = map.maxExtent;
                             participantsLayer.maxExtent = map.maxExtent;
@@ -442,7 +456,7 @@ $(document).ready(function() {
         }
 
         // chat log
-        var rest_of_height = contentHeight-360;
+        var rest_of_height = contentHeight-502;
         $("#chat_log").height(rest_of_height);
         
         // personal views
@@ -522,6 +536,26 @@ $(document).ready(function() {
         $('#bb_map_add_personal_view_name').val('');
         $('#bb_map_add_personal_view_description').val('');
         return false;
+    });
+    
+    $('#bb_get_current_view_url').click(function() {
+        var urlinfo = $.url();
+        
+        var c = map.getCenter();
+        c.transform(sm, gm);
+        //bb.addPersonalView(name, description, c.lon, c.lat, map.getZoom());
+        
+        d = {
+            room: bb.room,
+            where: {
+                coordinates: [c.lon, c.lat],
+                type: 'Point'
+            },
+            zoom_level: map.getZoom()
+        }
+        
+        var viewurl = urlinfo.attr('base')+urlinfo.attr('path')+'?'+$.param(d)
+        $('#bb_current_view_url').val(viewurl);
     });
 
     $("#center_all_here").submit(function() {
