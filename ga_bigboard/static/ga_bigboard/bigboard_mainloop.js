@@ -7,6 +7,7 @@ function BigBoard(args) {
     var roles;
     var annotations;
     var personal_views;
+    var notifications;
     var last_chat_update = 0;
     
     var started = false;    // Whether this bigboard instance has been started
@@ -19,6 +20,7 @@ function BigBoard(args) {
     var received_room = false;
     var received_shared_overlays = false;
     var received_personal_views = false;
+    var received_notifications = false;
 
 
     var my_username = args.user_name; // DEPRECATED
@@ -44,6 +46,7 @@ function BigBoard(args) {
     var bb_api_leave = either(args, 'bb_api_leave', '../leave/');
     var bb_api_heartbeat = either(args, 'bb_api_heartbeat', '../heartbeat/');
     var bb_api_personalviews = either(args, 'bb_api_personalviews', '../api/v4/personal_views/');
+    var bb_api_notifications = either(args, 'bb_api_notifications', '../api/v4/notification/');
 
     var location = [0,0];
     
@@ -221,6 +224,15 @@ function BigBoard(args) {
         
         received_personal_views = true;
     }
+    
+    function receivedNotifications(data, textStatus, jqXHR) {
+        notifications = data.objects;
+        if(debug) { console.log("latest version of notifications received"); }
+        
+        runCallbacks('receivedNotifications', notifications, textStatus, jqXHR);
+        
+        received_notifications = true;
+    }
 
     function refreshAnnotations() {
         received_annotations = false;
@@ -332,6 +344,18 @@ function BigBoard(args) {
             accepts : 'application/json',
             success : receivedPersonalViews,
             error : errorHandler(either(args, 'refreshPersonalViewsError', noop))
+        });
+    }
+    
+    // Refreshes the notifications list
+    function refreshNotifications() {
+        received_notifications = false;
+        $.ajax({
+            url : bb_api_notifications,
+            data : { get_notifications_for_user: true, room : room.id, limit : 0, format : 'json', username : user_name, api_key : api_key },
+            accepts : 'application/json',
+            success : receivedNotifications,
+            error : errorHandler(either(args, 'refreshNotificationsError', noop))
         });
     }
 
@@ -596,6 +620,7 @@ function BigBoard(args) {
                     refreshSharedOverlays();
                     refreshChats();
                     refreshPersonalViews();
+                    refreshNotifications();
                     once = false;
                 }
             }
@@ -608,6 +633,7 @@ function BigBoard(args) {
             if(received_shared_overlays) { refreshSharedOverlays(); }
             if(received_room) { refreshRoom(); }
             if(received_personal_views) { refreshPersonalViews(); }
+            if(received_notifications) { refreshNotifications(); }
         }
     }
 
@@ -633,9 +659,8 @@ function BigBoard(args) {
         return started;
     }
     
+    // Add a personal view to the server
     function addPersonalView(name, description, lon, lat, zoom) {
-        // Add a personal view to the server
-        
         var data = {
             name: name,
             description: description,
@@ -657,13 +682,38 @@ function BigBoard(args) {
         });
     }
     
+    // Remove the personal view from the server
     function deletePersonalView(view) {
-        // Remove the personal view from the server
-        
         $.ajax({
             url: view.resource_uri + "?username=" + user_name + "&api_key=" + api_key,
             type: 'DELETE',
             error : errorHandler(either(args, 'failedDeleteAnnotation', noop))
+        });
+    }
+    
+    // Add a bbnotification to the server
+    function addNotification(subject, body, level, shared_with_roles, shared_with_all, lon, lat, zoom) {
+        var data = {
+            subject: subject,
+            body: body,
+            level: level,
+            shared_with_roles: shared_with_roles,
+            shared_with_all: shared_with_all,
+            user : my_user,
+            room : room.resource_uri,
+            zoom_level: zoom,
+            where : { coordinates: [lon, lat], type:'Point' }
+        };
+        
+        $.ajax({
+            url : bb_api_notifications + '?username=' + user_name + "&api_key=" + api_key,
+            type : 'POST',
+            data: JSON.stringify(data),
+            cache: false,
+            contentType: 'application/json',
+            processData: false,
+            error: errorHandler(noop),
+            success: function(data) { console.log('success'); console.log(data); }
         });
     }
 
@@ -689,6 +739,7 @@ function BigBoard(args) {
         getRoomCenter: getRoomCenter,
         addPersonalView: addPersonalView,
         deletePersonalView: deletePersonalView,
+        addNotification: addNotification,
         
         registerCallback: registerCallback
     };

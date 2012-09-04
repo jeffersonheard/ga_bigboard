@@ -548,7 +548,7 @@ $(document).ready(function() {
         c.transform(sm, gm);
         //bb.addPersonalView(name, description, c.lon, c.lat, map.getZoom());
         
-        d = {
+        var d = {
             room: bb.room,
             where: {
                 coordinates: [c.lon, c.lat],
