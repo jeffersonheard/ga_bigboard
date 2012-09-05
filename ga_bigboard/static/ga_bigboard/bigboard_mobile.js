@@ -239,7 +239,9 @@ $(document).ready(function() {
                                         baseLayer = new OpenLayers.Layer.OSM("OpenStreetMap");
                                     break;
                                 case "WMS":
-                                        baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
+                                        var evaluable_options = "var options=" + data.base_layer_wms.default_creation_options + ";";
+                                        eval(evaluable_options);
+                                        baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, options.url, options, options);
                                     break;
                             }
                             map = new OpenLayers.Map({
