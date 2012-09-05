@@ -585,6 +585,7 @@ $(document).ready(function() {
 
         $("#annotation_file").val(null);
         $("#annotation_text").val('');
+        setTimeout(function(){annotationLayer.destroyFeatures(annotation);},3000);
     }
 
     controls.point_control.featureAdded = addAnnotation;
