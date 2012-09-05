@@ -14,6 +14,8 @@
     <script type="text/javascript" src='{{ STATIC_URL}}ga_bigboard/jquery-1.7.2.min.js'></script>
     <script type="text/javascript" src='{{ STATIC_URL}}ga_bigboard/jquery.mobile-1.1.0/jquery.mobile-1.1.0.min.js'></script>
     <script type='text/javascript' src='{{STATIC_URL}}ga_bigboard/jquery-url-parser/purl.js'></script>
+    <script type='text/javascript' src='{{STATIC_URL}}ga_bigboard/colorbox/jquery.colorbox-min.js'></script>
+    <link rel='stylesheet' href='{{STATIC_URL}}ga_bigboard/colorbox.css' />
 
     <!-- Mobile OpenLayers -->
 
@@ -27,6 +29,13 @@
         var api_key = "{{ api_key.key }}";
 
         var BB
+        
+        {# Get CollabNotifications app urls if they exist, otherwise just blank. #}
+        {% url api_dispatch_list resource_name="notificationtype" api_name="collabnotifications" as collabnotifications_notificationtype %}
+        var collabnotifications_api_notificationtype = '{{collabnotifications_notificationtype}}';
+        {% url api_dispatch_list resource_name="notification" api_name="collabnotifications" as collabnotifications_notification %}
+        var collabnotifications_api_notification = '{{collabnotifications_notification}}';
+        var bb_api_enter_room =         '{% url bigboard-room %}';
     </script>
 
     <script src="http://maps.google.com/maps/api/js?v=3.6&amp;sensor=false"></script>
@@ -178,6 +187,94 @@
         }
         .views-item-toggle-description:hover {
             color: darkblue;
+        }
+        
+        
+        
+        
+        
+        #bbnotifications_list {
+            height: 80px;
+            overflow: auto;
+            margin: 0 0 0 0;
+            /*padding: 5px 5px 0 5px;*/
+            padding: 5px 0 5px 0;
+            list-style: none;
+        }
+        #bbnotifications_list > li {
+            margin: 0 0 0 0;
+            padding: 0 0 0 5px;
+            list-style: none;
+            border-bottom: 1px solid 505050;
+        }
+        .bbnotifications-list-operations {
+            float: right;
+            /*color: lightblue;*/
+        }
+        
+        .bbnotifications-item-go-icon {
+            cursor: hand;
+            cursor: pointer;
+            padding: 0 5px 0 0;
+        }
+        .bbnotifications-item-remove-icon {
+            cursor: hand;
+            cursor: pointer;
+            padding: 0 5px 0 0;
+        }
+        
+        .bbnotifications-item-extra {
+            padding: 5px 0 0 0;
+        }
+        
+        
+        .bbnotifications-item-toggle-description {
+            /*float: right;*/
+            cursor: hand;
+            cursor: pointer;
+        }
+        .bbnotifications-item-toggle-description:hover {
+            color: lightblue;
+        }
+        
+        .bb-map-notification label {
+            display: inline;
+        }
+        .bb-map-create-notification-select-roles {
+            overflow: auto;
+            height: 50px;
+            text-align: left;
+            border: 1px solid black;
+            margin: 5px 5px 5px 5px;
+        }
+        .bb-map-create-notification-select-roles ul {
+            list-style: none;
+            margin: 0 0 0 0;
+            padding: 0 0 0 5px;
+        }
+        .bb-map-create-notification-select-roles ul li {
+            list-style: none;
+        }
+        
+        .bbnotification-level-information {
+            color: white;
+            text-shadow: none;
+            background-color: #3067C2;
+        }
+        .bbnotification-level-warning {
+            color: black;
+            text-shadow: none;
+            background-color: #F0D300;
+        }
+        .bbnotification-level-emergency {
+            color: white;
+            text-shadow: none;
+            background-color: #EC8800;
+        }
+        .bbnotification-level-disaster {
+            color: white;
+            text-shadow: none;
+            background-color: #DA2B2F;
         }
         
     </style>
@@ -363,6 +460,14 @@
                 <li data-role="list-divider">Locations</li>
                 <li id="personal_views_list"></li>
             </ul>
+            
+            <ul data-role="listview" id="bbnotifications" class='navigator'>
+                <li id="bbnotifications_header" data-role='list-divider'>Notifications</li>
+                <li>
+                    <input id='bb_create_bbnotification_box_open' type='button' value='Create Notification' />
+                </li>
+                <li id="bbnotifications_list"></li>
+            </ul>
 
             <div id="map"></div>
             <div id="zoomctl" data-role="controlgroup" data-type="vertical">
@@ -381,6 +486,7 @@
                 <a data-role="button" class='menuitem' id="show_annotations" href="#">Annotations</a>
                 <a data-role="button" class='menuitem' id="show_discussions" href="#">Discussions</a>
                 <a data-role="button" class='menuitem' id="show_personal_views" href="#">Personal Views</a>
+                <a data-role="button" class='menuitem' id="show_bbnotifications" href="#">Notifications</a>
 
             </span>
             <span data-role="controlgroup" data-mini="true" data-type="horizontal" id="logout_group">
@@ -395,6 +501,27 @@
 
             </div>
         <a data-role='button' href='#main_page'>Back</a>
+        </div>
+    </div>
+    
+    
+    <div style='display: none;'>
+        <div id='create_bbnotification_box'>
+            <form id='bb_map_create_notification_form'>
+                Subject:<br />
+                <input id='bb_map_create_notification_subject' class='bb-map-create-notification-name' type='text' /><br />
+                Body:<br />
+                <textarea id='bb_map_create_notification_body' class='bb-map-create-notification-description'></textarea><br />
+                Level:
+                <select id='bb_map_create_notification_level'></select><br />
+                Roles to send to:<br />
+                <div class='bb-map-create-notification-select-roles'>
+                    <ul></ul>
+                </div>
+                <input type='checkbox' id='bb_map_create_notification_all_roles' name='bb_map_create_notification_all_roles' checked='checked' />
+                <label for='bb_map_create_notification_all_roles'>All roles in room</label><br />
+                <input id='bb_map_create_notification_submit' type='submit' value='Create New Notification' />
+            </form>
         </div>
     </div>
 
