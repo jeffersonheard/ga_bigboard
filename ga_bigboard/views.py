@@ -49,7 +49,7 @@ class RoomListView(dv.TemplateView):
     template_name = 'ga_bigboard/room_list.template.html'
 
     def get_context_data(self, **kwargs):
-        kwargs['rooms'] = sorted(list(reduce(set.union, [set(r.room_set.all()[:]) for r in self.request.user.role_set.all()])))
+        kwargs['rooms'] = sorted(models.Room.objects.filter(roles__users=self.request.user).distinct())
         kwargs['form'] = RoomForm(initial={
             'owner' : 1
         })
