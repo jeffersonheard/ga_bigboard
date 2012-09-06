@@ -685,32 +685,39 @@ $(document).ready(function() {
     
     // check if global var 'collabnotifications_available' is set
     if( typeof collabnotifications_available == 'undefined' ) {
-        // check if the CollabNotifications app is available to send notifications to room members.
-        // get all collabnotifications types
-        $.ajax({
-            url: collabnotifications_api_notificationtype,
-            data: {format: 'json'},
-            accepts: 'application/json',
-            success: function(data) {
-                collabnotifications_available = true;
-                
-                // create 'collabnotifications_notificationtypes' if necessary
-                if( typeof collabnotifications_notificationtypes == 'undefined' ) {
-                    collabnotifications_notificationtypes = {};
-                }
-                
-                // add each type to the global dict
-                $.each(data.objects, function(key, val) {
-                    if( typeof collabnotifications_notificationtypes[val.type_id] == 'undefined' ) {
-                        collabnotifications_notificationtypes[val.type_id] = val;
+       if ( typeof collabnotifications_api_notificationtype != 'undefined' &&
+            typeof collabnotifications_api_notification != 'undefined' &&
+            typeof bb_api_enter_room != 'undefined' ) {
+        
+            // check if the CollabNotifications app is available to send notifications to room members.
+            // get all collabnotifications types
+            $.ajax({
+                url: collabnotifications_api_notificationtype,
+                data: {format: 'json'},
+                accepts: 'application/json',
+                success: function(data) {
+                    collabnotifications_available = true;
+                    
+                    // create 'collabnotifications_notificationtypes' if necessary
+                    if( typeof collabnotifications_notificationtypes == 'undefined' ) {
+                        collabnotifications_notificationtypes = {};
                     }
-                });
-            },  // end success
-            error: function () {
-                // collabnotifications is not available and should not be attempted to be used.
-                collabnotifications_available = false;
-            }   // end error
-        });
+                    
+                    // add each type to the global dict
+                    $.each(data.objects, function(key, val) {
+                        if( typeof collabnotifications_notificationtypes[val.type_id] == 'undefined' ) {
+                            collabnotifications_notificationtypes[val.type_id] = val;
+                        }
+                    });
+                },  // end success
+                error: function () {
+                    // collabnotifications is not available and should not be attempted to be used.
+                    collabnotifications_available = false;
+                }   // end error
+            });
+        } else {
+            collabnotifications_available = false;
+        }
     }
     
     function sendBBNotificationAsCollabNotifications(room, username, subject, body, level, selected_roles, all_selected, lon, lat, zoom_level) {
