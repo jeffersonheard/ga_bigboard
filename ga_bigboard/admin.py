@@ -11,4 +11,5 @@ admin.site.register(models.SharedOverlay)
 admin.site.register(models.Overlay)
 
 admin.site.register(models.PersonalView, admin_class=admin.OSMGeoAdmin)
+admin.site.register(models.BBNotification, admin_class=admin.OSMGeoAdmin)
 

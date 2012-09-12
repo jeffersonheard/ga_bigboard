@@ -30,10 +30,12 @@ $(document).ready(function() {
     var participants = {};
     var annotations = {};
     var geojson = new OpenLayers.Format.GeoJSON();
-    var roles = null;
+    var roles = {};
     var overlays = {};
     var personalViews = {};
-
+    var bbnotifications = {};
+    var notificationListRoles = {};
+    
     function init() { if(!initted) {
         initted = true;
 
@@ -194,7 +196,22 @@ $(document).ready(function() {
     
                 receivedRoles: [
                     function(data) {
-                        roles = data;
+                        iter(data, function(obj) {
+                            roles[obj.resource_uri] = obj;
+                        });
+                    },
+                    
+                    // populates notification creation role selection list
+                    function(data) {
+                        iter(data, function(obj) {
+                            if(!notificationListRoles.hasOwnProperty(obj.resource_uri)) {
+                                notificationListRoles[obj.resource_uri] = null;
+                                $('.bb-map-create-notification-select-roles ul').append(
+                                    "<li><input type='checkbox' id='bb_map_create_notification_roles_"+obj.id+"' name='bb_map_create_notification_roles' value='"+obj.resource_uri+"' />\
+                                    <label for='bb_map_create_notification_roles_"+obj.id+"'>"+obj.verbose_name+"</label></li>"
+                                )
+                            }
+                        });
                     }
                 ],
     
@@ -222,7 +239,9 @@ $(document).ready(function() {
                                         baseLayer = new OpenLayers.Layer.OSM("OpenStreetMap");
                                     break;
                                 case "WMS":
-                                        baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, eval(data.base_layer_wms.default_creation_options));
+                                        var evaluable_options = "var options=" + data.base_layer_wms.default_creation_options + ";";
+                                        eval(evaluable_options);
+                                        baseLayer = new OpenLayers.Layer.WMS(data.base_layer_wms.name, options.url, options, options);
                                     break;
                             }
                             map = new OpenLayers.Map({
@@ -237,7 +256,21 @@ $(document).ready(function() {
                             lastCenter = newCenter.clone();
         
                             map.maxExtent = baseLayer.maxExtent;
-                            map.setCenter(newCenter, data.zoom_level);
+                            
+                            // if a center has not been set in the url parameters, set to the room center, otherwise use the passed center
+                            urldata = $.url();
+                            if( typeof urldata.param('where') != 'undefined' && typeof urldata.param('zoom_level') != 'undefined' ) {
+                                // a center has been specified in the url
+                                var newC = new OpenLayers.LonLat(urldata.param('where').coordinates[0], urldata.param('where').coordinates[1])
+                                newC.transform(gm, sm);
+                                map.setCenter(newC, urldata.param('zoom_level')); 
+                                
+                            } else {
+                                // use default room center
+                                map.setCenter(newCenter, data.zoom_level);
+                            }
+                            
+                            
                             annotationLayer.projection = sm;
                             annotationLayer.maxExtent = map.maxExtent;
                             participantsLayer.maxExtent = map.maxExtent;
@@ -390,7 +423,68 @@ $(document).ready(function() {
                         });
                         
                     }
-                ]   // end receivedPersonalViews
+                ],  // end receivedPersonalViews
+                
+                // Adds the bbnotifications to the list
+                receivedNotifications: [
+                    function(data) {
+                        iter(data, function(obj) {
+                            
+                            if(!bbnotifications.hasOwnProperty(obj.resource_uri)) {
+                                bbnotifications[obj.resource_uri] = obj;
+                                
+                                $('<li/>', {
+                                                id: 'bbnotifications_item_'+obj.id
+                                            }).appendTo('#bbnotifications_list');
+                                $('<div/>', {
+                                                id: 'bbnotifications_item_top_'+obj.id,
+                                                class: notificationLevelsInfo[obj.level]['class'],
+                                                html: "\
+                                                    <span class='bbnotifications-list-operations'>\
+                                                        <span id='bbnotifications_item_go_icon_"+obj.id+"' data-action='jump_to_notification' data-view-index='"+obj.resource_uri+"' class='bbnotifications-item-go-icon'>Go</span>\
+                                                    </span>\
+                                                    "+obj.subject+"<br />"
+                                            }).appendTo('#bbnotifications_item_'+obj.id);
+                                $('<div/>', {
+                                                id: 'bbnotifications_item_extra_'+obj.id,
+                                                class: 'bbnotifications-item-extra'
+                                            }).appendTo('#bbnotifications_item_'+obj.id);
+                                $('<span/>', {
+                                                id: 'bbnotifications_item_toggle_description_'+obj.id,
+                                                class: 'bbnotifications-item-toggle-description',
+                                                html: 'Show Body'
+                                            }).appendTo('#bbnotifications_item_extra_'+obj.id);
+                                $('<div/>', {
+                                                id: 'bbnotifications_item_description_'+obj.id,
+                                                style: 'display: none;',
+                                                html: obj.body
+                                            }).appendTo('#bbnotifications_item_extra_'+obj.id);
+                                
+                                $('#bbnotifications_item_toggle_description_'+obj.id).click(function() {
+                                    if( $('#bbnotifications_item_description_'+obj.id).css('display') == 'none' ) {
+                                        $('#bbnotifications_item_description_'+obj.id).show(250);
+                                        $('#bbnotifications_item_toggle_description_'+obj.id).html('Hide Body');
+                                    } else {
+                                        $('#bbnotifications_item_description_'+obj.id).hide(250);
+                                        $('#bbnotifications_item_toggle_description_'+obj.id).html('Show Body');
+                                    }
+                                });
+                                
+                                // sets map center to chosen personal view
+                                $('#bbnotifications_item_go_icon_'+obj.id).click(function(e) {
+                                    var uri = $(this).data('view-index');
+                                    var center = bbnotifications[uri];
+                                    
+                                    var newCenter = new OpenLayers.LonLat(center.where.coordinates[0], center.where.coordinates[1])
+                                    newCenter.transform(gm, sm);
+                                    map.setCenter(newCenter, center.zoom_level); 
+                                });
+                                
+                            }
+                        });
+                        
+                    }
+                ]
             }
         });
 
@@ -419,7 +513,11 @@ $(document).ready(function() {
             return false;
         });
     }}
-
+    
+    // Map zoom
+    $("#plus").click(function() { map.zoomIn(); });
+    $("#minus").click(function() { map.zoomOut(); });
+    
     // fix height of content
     function fixContentHeight() {
         var footer = $("div[data-role='footer']:visible"),
@@ -440,25 +538,28 @@ $(document).ready(function() {
                 $.mobile.changePage("#popup", "pop");
             });
         }
-
+        
+        // overlays
+        $('#overlays').height(contentHeight+25);
+        
         // chat log
-        var rest_of_height = contentHeight-360;
+        var rest_of_height = contentHeight-502;
         $("#chat_log").height(rest_of_height);
         
         // personal views
         rest_of_height = contentHeight-305;
         $("#personal_views_list").height(rest_of_height);
-
-        // Map zoom
-        $("#plus").click(function() { map.zoomIn(); });
-        $("#minus").click(function() { map.zoomOut(); });
+        
+        // bbnotifications
+        rest_of_height = contentHeight-100;
+        $("#bbnotifications_list").height(rest_of_height);
 
         $(".help_text").height(contentHeight-20);
     }
     $(window).bind("orientationchange resize pageshow", fixContentHeight);
     document.body.onload = fixContentHeight;
-
-
+    
+    
     function menuSwitcher(evt) {
         var clicked = $(evt.currentTarget).attr('id').substring("show_".length);
 
@@ -483,6 +584,7 @@ $(document).ready(function() {
 
         $("#annotation_file").val(null);
         $("#annotation_text").val('');
+        setTimeout(function(){annotationLayer.destroyFeatures(annotation);},3000);
     }
 
     controls.point_control.featureAdded = addAnnotation;
@@ -510,7 +612,7 @@ $(document).ready(function() {
     //    return false;
     //});
     
-    // add teh current center/zoom to personal views
+    // add the current center/zoom to personal views
     $('#bb_map_add_personal_view_form').submit(function(e) {
         var name = $('#bb_map_add_personal_view_name').val();
         var description = $('#bb_map_add_personal_view_description').val();;
@@ -523,6 +625,225 @@ $(document).ready(function() {
         $('#bb_map_add_personal_view_description').val('');
         return false;
     });
+    
+    $('#bb_get_current_view_url').click(function() {
+        var urlinfo = $.url();
+        
+        var c = map.getCenter();
+        c.transform(sm, gm);
+        //bb.addPersonalView(name, description, c.lon, c.lat, map.getZoom());
+        
+        var d = {
+            room: bb.room,
+            where: {
+                coordinates: [c.lon, c.lat],
+                type: 'Point'
+            },
+            zoom_level: map.getZoom()
+        }
+        
+        var viewurl = urlinfo.attr('base')+urlinfo.attr('path')+'?'+$.param(d)
+        $('#bb_current_view_url').val(viewurl);
+    });
+    
+    
+    // lookup to get bbnotification level title & css class
+    var notificationLevelsInfo = {
+        1: {
+            title: 'Disaster',
+            level: 1,
+            class: 'bbnotification-level-disaster',
+            collabnotification_typename: 'BBDISASTER'
+        },
+        2: {
+            title: 'Emergency',
+            level: 2,
+            class: 'bbnotification-level-emergency',
+            collabnotification_typename: 'BBEMERGENCY'
+        },
+        3: {
+            title: 'Warning',
+            level: 3,
+            class: 'bbnotification-level-warning',
+            collabnotification_typename: 'BBWARNING'
+        },
+        4: {
+            title: 'Information',
+            level: 4,
+            class: 'bbnotification-level-information',
+            collabnotification_typename: 'BBINFORMATION'
+        }
+    }
+    // add all the levels to the select input in the notification creation form
+    $.each(notificationLevelsInfo, function(key, val) {
+        $('<option/>', {
+            value: val.level,
+            html: val.title
+        }).prependTo($('#bb_map_create_notification_level'));
+    });
+    
+    // check if global var 'collabnotifications_available' is set
+    if( typeof collabnotifications_available == 'undefined' ) {
+       if ( typeof collabnotifications_api_notificationtype != 'undefined' &&
+            typeof collabnotifications_api_notification != 'undefined' &&
+            typeof bb_api_enter_room != 'undefined' ) {
+        
+            // check if the CollabNotifications app is available to send notifications to room members.
+            // get all collabnotifications types
+            $.ajax({
+                url: collabnotifications_api_notificationtype,
+                data: {format: 'json'},
+                accepts: 'application/json',
+                success: function(data) {
+                    collabnotifications_available = true;
+                    
+                    // create 'collabnotifications_notificationtypes' if necessary
+                    if( typeof collabnotifications_notificationtypes == 'undefined' ) {
+                        collabnotifications_notificationtypes = {};
+                    }
+                    
+                    // add each type to the global dict
+                    $.each(data.objects, function(key, val) {
+                        if( typeof collabnotifications_notificationtypes[val.type_id] == 'undefined' ) {
+                            collabnotifications_notificationtypes[val.type_id] = val;
+                        }
+                    });
+                },  // end success
+                error: function () {
+                    // collabnotifications is not available and should not be attempted to be used.
+                    collabnotifications_available = false;
+                }   // end error
+            });
+        } else {
+            collabnotifications_available = false;
+        }
+    }
+    
+    function sendBBNotificationAsCollabNotifications(room, username, subject, body, level, selected_roles, all_selected, lon, lat, zoom_level) {
+        // send to all members of all roles that are available to this room,
+        // without repeating and not sending to the notification creator.
+        var sendRoles = [];
+        if( all_selected == true ) {
+            $.each(roles, function(key, val) {
+                sendRoles.push(key);
+            });
+        }
+        else { sendRoles = selected_roles; }
+        
+        var sentto = {};
+        var notificationsToSend = {objects:[]}  // bulk creation via PATCH
+        
+        // add sender to sentto dict
+        var user_id;
+        $.each(participants, function(key, val) {
+            if( val.user.username == username ) {
+                sentto[val.user.resource_uri] = null;
+            }
+        });
+        
+        // compute view url
+        var urlinfo = $.url();
+        var d = {
+            room: room,
+            where: {
+                coordinates: [lon, lat],
+                type: 'Point'
+            },
+            zoom_level: zoom_level
+        }
+        var viewurl = urlinfo.attr('base')+bb_api_enter_room+'?'+$.param(d)
+        
+        // send to each user not in sentto
+        $.each(sendRoles, function(k, v) {
+            
+            // send to each user that is a member of each role
+            $.each(roles[v].users, function(key, val) {
+                
+                // if the user has not been processed yet
+                if( typeof sentto[val] == 'undefined' ) {
+                    sentto[val] = null;
+                    
+                    notificationsToSend.objects.push({
+                        user: val,
+                        type: collabnotifications_notificationtypes[ notificationLevelsInfo[level]['collabnotification_typename'] ].resource_uri,
+                        text: subject+'<br />\
+                            <a href="'+viewurl+'"\
+                                onClick="var url = \''+viewurl+'\';\
+                                try {\
+                                    var urldata = $.url(url);\
+                                    if( typeof bigboards != \'undefined\' && typeof bigboards[urldata.param(\'room\')] != \'undefined\' ) {\
+                                        \
+                                        var gm = new OpenLayers.Projection(\'EPSG:4326\');\
+                                        var sm = new OpenLayers.Projection(\'EPSG:3857\');\
+                                        \
+                                        var center = urldata.param(\'where\');\
+                                        var zoom = urldata.param(\'zoom_level\');\
+                                        var newCenter = new OpenLayers.LonLat(center.coordinates[0], center.coordinates[1]);\
+                                        newCenter.transform(gm, sm);\
+                                        \
+                                        $.each(bigboards[urldata.param(\'room\')][\'maps\'], function(key, val) {\
+                                            val.setCenter(newCenter, zoom);\
+                                        });\
+                                    return false;\
+                                        \
+                                    }\
+                                } catch(err) {\
+                                }">Go to Location</a>\
+                        ',
+                        extra: ''
+                    });
+                }
+                
+            });
+            
+        });
+        
+        // send all notifications
+        if( notificationsToSend.objects.length > 0 ) {
+            $.ajax({
+                url: collabnotifications_api_notification + '?username=' + user_name + '&api_key=' + api_key,
+                type: 'PATCH',
+                contentType: 'application/json',
+                cache: false,
+                data: JSON.stringify(notificationsToSend)
+            })
+        }
+        
+    }
+    
+    // open up notification creation form box
+    $('#bb_create_bbnotification_box_open').click(function(e) {
+        
+        $.colorbox({inline:true, href:'#create_bbnotification_box'});
+        
+    });
+    
+    $('#bb_map_create_notification_form').submit(function(e) {
+        var subject = $('#bb_map_create_notification_subject').val();
+        var body = $('#bb_map_create_notification_body').val();
+        var level = $('#bb_map_create_notification_level').val();
+        var selected_roles = [];
+        $('[name="bb_map_create_notification_roles"]:checked').each(function() {
+            selected_roles.push($(this).val());
+        });
+        var all_selected = $('#bb_map_create_notification_all_roles').prop('checked');
+        
+        var center = $.extend({},map.center);
+        center.transform(sm, gm);
+        bb.addNotification(subject, body, level, selected_roles, all_selected, center.lon, center.lat, map.zoom)
+        if( collabnotifications_available == true ) {
+            sendBBNotificationAsCollabNotifications(room_name, user_name, subject, body, level, selected_roles, all_selected, center.lon, center.lat, map.zoom)
+        }
+        
+        $('#bb_map_create_notification_subject').val('');
+        $('#bb_map_create_notification_body').val('');
+        $('[name="bb_map_create_notification_roles'+'"]').prop('checked', false);
+        $('#bb_map_create_notification_all_roles').prop('checked', true);
+        $.colorbox.close();
+        return false;
+    });
+    
+    
 
     $("#center_all_here").submit(function() {
         var c = map.getCenter();
