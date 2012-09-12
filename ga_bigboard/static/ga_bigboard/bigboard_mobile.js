@@ -514,6 +514,9 @@ $(document).ready(function() {
         });
     }}
     
+    // Map zoom
+    $("#plus").click(function() { map.zoomIn(); });
+    $("#minus").click(function() { map.zoomOut(); });
     
     // fix height of content
     function fixContentHeight() {
@@ -551,16 +554,12 @@ $(document).ready(function() {
         rest_of_height = contentHeight-100;
         $("#bbnotifications_list").height(rest_of_height);
 
-        // Map zoom
-        $("#plus").click(function() { map.zoomIn(); });
-        $("#minus").click(function() { map.zoomOut(); });
-
         $(".help_text").height(contentHeight-20);
     }
     $(window).bind("orientationchange resize pageshow", fixContentHeight);
     document.body.onload = fixContentHeight;
-
-
+    
+    
     function menuSwitcher(evt) {
         var clicked = $(evt.currentTarget).attr('id').substring("show_".length);
 
