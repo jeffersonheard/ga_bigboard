@@ -1,4 +1,5 @@
 from django.contrib.gis.geos.geometry import GEOSGeometry
+from django.db.models import Q
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie import fields as f
 from tastypie.api import Api
@@ -223,6 +224,65 @@ class PersonalViewResource(GeoResource):
         return super(PersonalViewResource, self).obj_create(bundle, request, user=request.user)
 
 
+class BBNotificationsResource(GeoResource):
+    room = f.ForeignKey(to=RoomResource, attribute='room')
+    user = f.ForeignKey(to=UserResource, attribute='user')
+    shared_with_roles = f.ManyToManyField(RoleResource, 'shared_with_roles')
+    
+    class Meta:
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        queryset = models.BBNotification.objects.all()
+        resource_name = 'notification'
+        allowed_methods = ('get','post','put','delete')
+        filtering = {
+            'room' : ALL_WITH_RELATIONS,
+            'user' : ALL_WITH_RELATIONS,
+            'when' : ALL,
+            'id' : ALL,
+            'shared_with_all' : ALL,
+            'shared_with_roles' : ALL_WITH_RELATIONS,
+            'get_notifications_for_user': ['exact',],
+        }
+    
+    def obj_create(self, bundle, request=None, **kwargs):
+        return super(BBNotificationsResource, self).obj_create(bundle, request, user=request.user)
+    
+    def build_filters(self, filters=None):
+        """builds the custom filter 'get_notifications_for_user'
+        """
+        #pdb.set_trace()
+        if filters == None:
+            filters = {}
+        orm_filters = super(BBNotificationsResource, self).build_filters(filters)
+        
+        if('get_notifications_for_user' in filters):
+            query = filters['get_notifications_for_user']
+            qset = (
+                Q(shared_with_all=True) |
+                Q(user__username=filters['username']) |
+                Q(shared_with_roles__users__username=filters['username'])
+            )
+            orm_filters.update({'custom': qset})
+        
+        return orm_filters
+    
+    def apply_filters(self, request, applicable_filters):
+        """Applies the custom filter 'get_notifications_for_user' if necessary.
+        """
+        if 'custom' in applicable_filters:
+            custom = applicable_filters.pop('custom')
+        else:
+            custom = None
+        
+        #pdb.set_trace()
+    
+        semi_filtered = super(BBNotificationsResource, self).apply_filters(request, applicable_filters)
+    
+        return semi_filtered.filter(custom) if custom else semi_filtered
+        
+
+
 api_v4 = Api('v4')
 api_v4.register(UserResource())
 api_v4.register(RoleResource())
@@ -233,3 +293,4 @@ api_v4.register(RoomResource())
 api_v4.register(ParticipantResource())
 api_v4.register(ChatResource())
 api_v4.register(PersonalViewResource())
+api_v4.register(BBNotificationsResource())

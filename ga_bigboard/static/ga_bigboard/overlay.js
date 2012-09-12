@@ -232,18 +232,19 @@ function Overlay(m, server_object, bb) {
     }
 
     function raise() {
-        layer.map.raiseLayer(layer, 1);
-
+        
+        var elt = overlay_elements.prev();
         if(elt && elt.size() > 0) {
-            var elt = overlay_elements.prev();
+            layer.map.raiseLayer(layer, 1);
             overlay_elements.detach();
             overlay_elements.insertBefore(elt);
         }
     }
 
     function lower() {
-
-        var elt = overlay_elements.next();
+        
+        // it had been selecting the overlay_base element previously on the lowest element. The not prevents that.
+        var elt = overlay_elements.next(':not(#overlay_base)');
         if(elt && elt.size() > 0) {
             layer.map.raiseLayer(layer, -1);
             overlay_elements.detach();

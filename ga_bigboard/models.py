@@ -256,4 +256,121 @@ class PersonalView(m.Model):
     
     class Meta:
         ordering = ['when']
+
+
+class BBNotification(m.Model):
+    """A notification for roles within a room.  Stores the user's view (center/zoom)
+    upon creation with a short subject and long formattable body and a severity level.
+    """
+    NOTIFICATION_LEVELS = (
+        ('4','Information'),
+        ('3','Warning'),
+        ('2','Emergency'),
+        ('1','Disaster'),
+    )
     
+    room = m.ForeignKey(Room, db_index=True)
+    
+    #: the user who created this notification
+    user = m.ForeignKey(User)
+    
+    #: Roles with whom this notification are shared
+    shared_with_roles = m.ManyToManyField(Role, blank=True, null=True)
+
+    #: Share with all?
+    shared_with_all = m.BooleanField(default=True)
+    
+    #: notification level
+    level = m.CharField(max_length=2, blank=False, choices=NOTIFICATION_LEVELS)
+    
+    #: subjuct of the notification
+    subject = m.CharField(max_length=255, blank=False)
+    
+    #: body of the notification
+    body = m.TextField(blank=True)
+    
+    #: location of the occurance
+    where = m.PointField(srid=4326, null=False);
+    
+    #: The zoom level of this view
+    zoom_level = m.IntegerField(default=5, null=False)
+    
+    #: when this view was stored
+    when = m.DateTimeField(auto_now_add=True, db_index=True)
+    
+    def __unicode__(self):
+        return self.room.name + '.' + self.user.username + ' -> ' + self.get_level_display()
+    
+    objects = m.GeoManager()
+    
+    class Meta:
+        ordering = ['when']
+
+
+
+from django.conf import settings
+
+# create the notification types if the CollabNotifications is installed
+if 'CollabNotifications' in settings.INSTALLED_APPS:
+    from CollabNotifications.models import RegisteredNotificationType
+    import datetime
+    
+    class BBNotificationINFORMATIONtype(RegisteredNotificationType):
+        type_id = 'BBINFORMATION'       #:
+        title = 'Bigboard Information'  #:
+        expires = 5000                  #:
+        speed = 500                     #:
+    
+        # deleted after 1 day
+        delta = datetime.timedelta(weeks=1)
+        duration = delta.days*86400 + delta.seconds     #: Deleted after 1 week
+        force_acknowledgement = False   #:
+    
+        template = 'basic-template'     #:
+        django_template = 'CollabNotifications/standardTemplates.html'  #:
+        description_short = ''          #:
+        description_long = ''           #:
+    
+    class BBNotificationWARNINGtype(RegisteredNotificationType):
+        type_id = 'BBWARNING'           #:
+        title = 'Bigboard Warning'      #:
+        expires = 5000                  #:
+        speed = 500                     #:
+    
+        # deleted after 1 day
+        delta = datetime.timedelta(weeks=4)
+        duration = delta.days*86400 + delta.seconds     #: Deleted after 4 weeks
+        force_acknowledgement = False   #:
+    
+        template = 'basic-template'     #:
+        django_template = 'CollabNotifications/standardTemplates.html'  #:
+        description_short = ''          #:
+        description_long = ''           #:
+    
+    class BBNotificationEMERGENCYtype(RegisteredNotificationType):
+        type_id = 'BBEMERGENCY'         #:
+        title = 'Bigboard Emergency'    #:
+        expires = 0                     #:
+        speed = 500                     #:
+    
+        duration = -1                   #: Never deleted
+        force_acknowledgement = True    #:
+    
+        template = 'basic-template'     #:
+        django_template = 'CollabNotifications/standardTemplates.html'  #:
+        description_short = ''          #:
+        description_long = ''           #:
+    
+    class BBNotificationDISASTERtype(RegisteredNotificationType):
+        type_id = 'BBDISASTER'          #:
+        title = 'Bigboard Disaster'     #:
+        expires = 0                     #:
+        speed = 500                     #:
+    
+        duration = -1                   #: Never deleted
+        force_acknowledgement = True    #:
+    
+        template = 'basic-template'     #:
+        django_template = 'CollabNotifications/standardTemplates.html'  #:
+        description_short = ''          #:
+        description_long = ''           #:
