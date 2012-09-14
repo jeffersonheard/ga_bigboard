@@ -482,6 +482,9 @@ function BigBoard(args) {
                 wait = true;
                 file = value;
                 break;
+            case 'label':
+                data.text = value;
+                break;
             default:
                 data[kind] = value;
                 break;

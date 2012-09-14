@@ -159,7 +159,7 @@ class Annotation(m.Model):
     associated_overlay = m.CharField(max_length=32, db_index=True, blank=True, null=True)
 
     #: kind.  should be "link, image, audio, video, text, media"
-    kind = m.CharField(max_length=10, choices=(('link','link'),('image','image'), ('audio','audio'),('video','video'),('text','text'),('media','media')))
+    kind = m.CharField(max_length=10, choices=(('link','link'),('image','image'), ('audio','audio'),('video','video'),('text','text'),('media','media'), ('label','label')))
 
     #: geometry.  Geometry is recorded in map units for efficiency
     geometry = m.GeometryField(srid=3857)

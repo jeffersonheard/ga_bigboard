@@ -6,8 +6,49 @@ var initted = false;
 $(document).ready(function() {
     var gm = new OpenLayers.Projection("EPSG:4326");
     var sm = new OpenLayers.Projection("EPSG:3857");
-    var annotationLayer = new OpenLayers.Layer.Vector("Annotations");
-    var participantsLayer = new OpenLayers.Layer.Vector("Participants");
+    var annotationLayer = new OpenLayers.Layer.Vector("Annotations", {
+        styleMap: new OpenLayers.StyleMap({ 'default' : {
+            strokeColor: "${stroke_color}",
+            strokeOpacity: 1,
+            strokeWidth: "${stroke_width}",
+            fillColor: "${fill_color}",
+            fillOpacity: 0.5,
+            pointRadius: "${point_radius}",
+            pointerEvents: "visiblePainted",
+            // label with \n linebreaks
+            label : "${label}",
+
+            fontColor: "black",
+            fontSize: "12px",
+            fontFamily: "Helvetica, Droid Sans, sans",
+            fontWeight: "bold",
+            labelAlign: "left",
+            labelXOffset: 8,
+            labelYOffset: -5,
+            labelOutlineColor: "#fffcbb",
+            labelOutlineWidth: 3
+        }})
+    });
+    var participantsLayer = new OpenLayers.Layer.Vector("Participants", {
+        styleMap: new OpenLayers.StyleMap({ 'default' : {
+            fill : true,
+            fillColor : '#ff6666',
+            strokeColor : '#ff6666',
+            strokeWidth : 1,
+            fillOpacity : 0.6,
+            graphic : true,
+            graphicName : 'cross',
+            fontColor : '#000000',
+            fontWeight : 'bold',
+            fontFamily : 'Helvetica, Arial, sans-serif',
+            fontSize : '9pt',
+            pointRadius : 5,
+            label : "${username}",
+            labelAlign : 'l',
+            labelXOffset : 7
+
+        }})
+    });
 
     controls = {
         // DEBUG ONLY: layer_control : new OpenLayers.Control.LayerSwitcher(),
@@ -64,6 +105,12 @@ $(document).ready(function() {
                                 feature = geojson.read(ann.geometry)[0];
         
                                 feature.attributes = $.extend(ann, {});
+                                feature.attributes.label = (feature.attributes.kind === 'label') ? feature.attributes.text : "";
+                                feature.attributes.stroke_color = feature.attributes.stroke_color || "#323299";
+                                feature.attributes.fill_color = feature.attributes.fill_color || "#6464aa";
+                                feature.attributes.stroke_width = feature.attributes.stroke_width || 3;
+                                feature.attributes.point_radius = feature.attributes.point_radius || 6;
+
                                 annotationLayer.addFeatures(feature);
                                 annotations[ann.resource_uri] = feature;
                             }
@@ -150,24 +197,9 @@ $(document).ready(function() {
                                         participant.where.coordinates[1]
                                     ).transform(gm, sm), participant);
         
-                                f.style = {
-                                    fill : true,
-                                    fillColor : '#ff6666',
-                                    strokeColor : '#ff6666',
-                                    strokeWidth : 1,
-                                    fillOpacity : 0.6,
-                                    graphic : true,
-                                    graphicName : 'cross',
-                                    fontColor : '#000000',
-                                    fontWeight : 'bold',
-                                    fontFamily : 'Helvetica, Arial, sans-serif',
-                                    fontSize : '9pt',
-                                    pointRadius : 5,
-                                    label : participant.user.username,
-                                    labelAlign : 'l',
-                                    labelXOffset : 7
-                                };
+
                                 f.attributes = participant;
+                                f.attributes.username = participant.user.username;
                                 f.user = participant.user.resource_uri;
                                 participantsLayer.addFeatures([f]);
                             }
@@ -185,10 +217,10 @@ $(document).ready(function() {
                         });
         
                         // TODO - click on user name in participant list to center on that user.
-                        //$(".username").click(function(k) {
-                        //    var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
-                        //    map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
-                        //});
+                        $(".username").click(function(k) {
+                            var pt = participantsLayer.getFeatureBy('user', $(k.currentTarget).data('user')).geometry;
+                            map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
+                        });
         
                         participantsLayer.redraw();
                     }
@@ -580,7 +612,7 @@ $(document).ready(function() {
         var kind = $("#annotation_kind").val();
         var file = $("#annotation_file")[0].files[0];
         var text = $("#annotation_text").val();
-        bb.persistAnnotation(kind, kind==='text'||kind==='link' ? text : file, annotation);
+        bb.persistAnnotation(kind, (kind==='text'||kind==='link'||kind==='label') ? text : file, annotation);
 
         $("#annotation_file").val(null);
         $("#annotation_text").val('');

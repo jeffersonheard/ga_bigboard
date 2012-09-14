@@ -378,7 +378,8 @@
                     <form id='annotation_data'>
                         <label for='annotation_kind'>Kind</label>
                         <select name='annotation_kind' id='annotation_kind'>
-                            <option value='text' selected='true'>Text</option>
+                            <option value='label' selected='true'>Label</option>
+                            <option value='text'>Text</option>
                             <option value='link'>Link</option>
                             <option value='image'>Image</option>
                             <option value='video'>Video</option>
@@ -425,7 +426,7 @@
                     </form>
                 </li>
                 
-                <li data-role="list-divider">Get Current View URL</li>
+                <li data-role="list-divider">Link to Current View</li>
                 <li>
                     <input id='bb_get_current_view_url' type='button' value='Get Current Url' />
                     <input id='bb_current_view_url' type='text' />
@@ -446,7 +447,7 @@
             </ul>
             
             <ul data-role="listview" id="personal_views" class='navigator'>
-                <li id="personal_views_header" data-role='list-divider'>Personal Views</li>
+                <li id="personal_views_header" data-role='list-divider'>Bookmarks</li>
                 <li>
                     <form id='bb_map_add_personal_view_form'>
                         Name:<br />
@@ -485,8 +486,8 @@
                 <a data-role="button" class='menuitem' id="show_overlays" href="#">Overlays</a>
                 <a data-role="button" class='menuitem' id="show_annotations" href="#">Annotations</a>
                 <a data-role="button" class='menuitem' id="show_discussions" href="#">Discussions</a>
-                <a data-role="button" class='menuitem' id="show_personal_views" href="#">Personal Views</a>
-                <a data-role="button" class='menuitem' id="show_bbnotifications" href="#">Notifications</a>
+                <a data-role="button" class='menuitem' id="show_personal_views" href="#">Bookmarks</a>
+                <a data-role="button" class='menuitem' id="show_bbnotifications" href="#">Messages</a>
 
             </span>
             <span data-role="controlgroup" data-mini="true" data-type="horizontal" id="logout_group">
@@ -505,24 +506,24 @@
     </div>
     
     
-    <div style='display: none;'>
-        <div id='create_bbnotification_box'>
-            <form id='bb_map_create_notification_form'>
-                Subject:<br />
-                <input id='bb_map_create_notification_subject' class='bb-map-create-notification-name' type='text' /><br />
-                Body:<br />
-                <textarea id='bb_map_create_notification_body' class='bb-map-create-notification-description'></textarea><br />
-                Level:
-                <select id='bb_map_create_notification_level'></select><br />
-                Roles to send to:<br />
-                <div class='bb-map-create-notification-select-roles'>
-                    <ul></ul>
-                </div>
-                <input type='checkbox' id='bb_map_create_notification_all_roles' name='bb_map_create_notification_all_roles' checked='checked' />
-                <label for='bb_map_create_notification_all_roles'>All roles in room</label><br />
-                <input id='bb_map_create_notification_submit' type='submit' value='Create New Notification' />
-            </form>
-        </div>
+    <div style='...'>
+    <div data-role='page' id='create_bbnotification_box'>
+        <form id='bb_map_create_notification_form'>
+            <label for="bb_map_create_notification_subject">Subject:</label>
+            <input id='bb_map_create_notification_subject' class='bb-map-create-notification-name' type='text' /><br />
+            <label for="bb_map_create_notification_body">Body:</label>
+            <textarea id='bb_map_create_notification_body' class='bb-map-create-notification-description'></textarea><br />
+            <label for="bb_map_create_notification_level">Level:</label>
+            <select id='bb_map_create_notification_level'></select><br />
+            <label for="bb_map_create_notification_all_roles">Roles to send to:</label>
+            <div class='bb-map-create-notification-select-roles'>
+                <ul></ul>
+            </div>
+            <input type='checkbox' id='bb_map_create_notification_all_roles' name='bb_map_create_notification_all_roles' checked='checked' />
+            <label for='bb_map_create_notification_all_roles'>All roles in room</label><br />
+            <input id='bb_map_create_notification_submit' type='submit' value='Create New Notification' />
+        </form>
+    </div>
     </div>
 
 
