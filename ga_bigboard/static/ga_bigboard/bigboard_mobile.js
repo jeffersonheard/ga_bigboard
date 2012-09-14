@@ -177,33 +177,22 @@ $(document).ready(function() {
                     function(data) {
                         participants = {};
                         $("#participant_list>*").detach();
-        
-                        iter(data, function(participant) {
+
+                        participantsLayer.removeAllFeatures()
+                        var participantFeatures = mapping(data, function(participant) {
                             participants[participant.user.resource_uri] = participant;
-                            var f = participantsLayer.getFeatureBy('user', participant.user.resource_uri); // for each participant in the room, update their position on the map
-                            if(f) {
-                                var pt = new OpenLayers.Geometry.Point(
+                            f = new OpenLayers.Feature.Vector(
+                                new OpenLayers.Geometry.Point(
                                     participant.where.coordinates[0],
                                     participant.where.coordinates[1]
-                                ).transform(gm, sm);
-        
-                                f.geometry.x = pt.x;
-                                f.geometry.y = pt.y;
-                            }
-                            else {
-                                f = new OpenLayers.Feature.Vector(
-                                    new OpenLayers.Geometry.Point(
-                                        participant.where.coordinates[0],
-                                        participant.where.coordinates[1]
-                                    ).transform(gm, sm), participant);
-        
+                                ).transform(gm, sm), participant);
 
-                                f.attributes = participant;
-                                f.attributes.username = participant.user.username;
-                                f.user = participant.user.resource_uri;
-                                participantsLayer.addFeatures([f]);
-                            }
-        
+
+                            f.attributes = participant;
+                            f.attributes.username = participant.user.username;
+                            f.user = participant.user.resource_uri;
+
+
                             var display_name = participant.user.first_name ? (participant.user.first_name + ' ' + participant.user.last_name)  : participant.user.username;
                             var heartbeat_time = new Date(participant.last_heartbeat);
                             var email_link = $("<a class='user_email' data-role='button' data-mini='true' href='mailto:" + participant.user.email + "'>email</a>");
@@ -214,7 +203,10 @@ $(document).ready(function() {
                                     .append(email_link);
         
                             $("#participant_list").append(participant_name);
+
+                            return f;
                         });
+                        participantsLayer.addFeatures(participantFeatures);
         
                         // TODO - click on user name in participant list to center on that user.
                         $(".username").click(function(k) {
@@ -222,7 +214,7 @@ $(document).ready(function() {
                             map.setCenter(new OpenLayers.LonLat(pt.x, pt.y));
                         });
         
-                        participantsLayer.redraw();
+                        //participantsLayer.redraw();
                     }
                 ],
     
